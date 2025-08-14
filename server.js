@@ -156,7 +156,7 @@ app.get('/results.json', (req, res) => {
       // ✅ Score calculation
       const zonePenalty = Math.max(0, zoneAttempt - 1) * 0.1;
       const topPenalty = Math.max(0, topAttempt - 1) * 0.1;
-      const score = (r.HasZone === 'true' ? 10 - zonePenalty : 0) + (r.HasTop === 'true' ? 25 - topPenalty : 0);
+      const score = (r.HasZone === 'true' ? 10 - zonePenalty : 0) + (r.HasTop === 'true' ? 15 - topPenalty : 0);
       stats.score += parseFloat(score.toFixed(2));
     });
 
