@@ -97,9 +97,16 @@ app.post('/submit', (req, res) => {
 app.get('/results.json', (req, res) => {
   try {
     const resultPath = path.join(__dirname, 'result.csv');
+
+    // ✅ Check if file exists first
+    if (!fs.existsSync(resultPath)) {
+      return res.json({});
+    }
+
     const fileContent = fs.readFileSync(resultPath, 'utf8');
     const records = csvParse.parse(fileContent, { columns: true, skip_empty_lines: true });
 
+    // ✅ Your aggregation logic here...
     const climberStats = {};
     const seenRoutes = new Set();
 
@@ -118,43 +125,48 @@ app.get('/results.json', (req, res) => {
           attemptsToZone: 0,
           score: 0,
           routeStatus: {},
-          routeAttempts: {} // ✅ Add this here
+          routeAttempts: {}
         };
       }
 
       const stats = climberStats[name];
+      const zoneAttempt = parseInt(r.ZoneOnAttempt || 0, 10);
+      const topAttempt = parseInt(r.TopOnAttempt || 0, 10);
 
-        if (r.HasZone === 'true') {
-          stats.zoneCount += 1;
-          stats.attemptsToZone += parseInt(r.ZoneOnAttempt || r.TotalAttempts || 0, 10);
-        }
+      if (r.HasZone === 'true') {
+        stats.zoneCount += 1;
+        stats.attemptsToZone += zoneAttempt;
+      }
 
-        if (r.HasTop === 'true') {
-          stats.topCount += 1;
-          stats.attemptsToTop += parseInt(r.TopOnAttempt || r.TotalAttempts || 0, 10);
-          stats.routeStatus[route] = 'top';
-        } else if (r.HasZone === 'true') {
-          stats.routeStatus[route] = 'zone';
-        } else {
-          stats.routeStatus[route] = 'none';
-        }
+      if (r.HasTop === 'true') {
+        stats.topCount += 1;
+        stats.attemptsToTop += topAttempt;
+        stats.routeStatus[route] = 'top';
+      } else if (r.HasZone === 'true') {
+        stats.routeStatus[route] = 'zone';
+      } else {
+        stats.routeStatus[route] = 'none';
+      }
 
-
-        // ✅ This is the correct place for routeAttempts
       stats.routeAttempts[route] = {
-        zone: r.ZoneOnAttempt || '',
-        top: r.TopOnAttempt || ''
+        zone: zoneAttempt || '',
+        top: topAttempt || ''
       };
+
+      // ✅ Score calculation
+      const zonePenalty = Math.max(0, zoneAttempt - 1) * 0.1;
+      const topPenalty = Math.max(0, topAttempt - 1) * 0.1;
+      const score = (r.HasZone === 'true' ? 10 - zonePenalty : 0) + (r.HasTop === 'true' ? 25 - topPenalty : 0);
+      stats.score += parseFloat(score.toFixed(2));
     });
-    
-    stats.score += calculateScore(zoneAttempt, topAttempt);
 
     res.json(climberStats);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error reading result.csv' });
+    console.error('Error reading result.csv:', err.message);
+    res.status(500).json({ error: 'Error reading result.csv', details: err.message });
   }
 });
+
 
 
 // ✅ Serve summary of submissions
