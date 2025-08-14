@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="/socket.io/socket.io.js"></script>
+  <meta charset="UTF-8" />
+  <title>Cumulative Leaderboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+
+    #updateBanner {
+      background-color: #dff0d8;
+      color: #3c763d;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #d6e9c6;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: bold;
+      animation: fadeOut 2s ease-in-out forwards;
+    }
+
+    @keyframes fadeOut {
+      0%   { opacity: 1; }
+      100% { opacity: 0; display: none; }
+    }
+
+    .highlighted {
+      background-color: #ffffcc;
+      transition: background-color 0.5s ease;
+    }
+
+    .route-summary {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.bar {
+  width: 12px;
+  height: 20px;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.bar.full {
+  background-color: #4caf50; /* green for top */
+}
+
+.bar.half {
+  background: linear-gradient(to top, #4caf50 50%, #eee 50%);
+}
+
+.bar.empty {
+  background-color: #eee; /* gray for no score */
+}
+
+.bar {
+  position: relative;
+}
+
+.bar::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.bar:hover::after {
+  opacity: 1;
+}
+.bar {
+  position: relative;
+}
+
+.bar::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.bar:hover::after {
+  opacity: 1;
+}
+
+
+  </style>
+</head>
+<body>
+
+  <h1>Cumulative Leaderboard</h1>
+
+  <div id="updateBanner" style="display: none;">🔄 Leaderboard updated!</div>
+
+  <table id="leaderboard">
+    <thead>
+      <tr>
+        <th>Climber</th>
+        <th>Total Tops</th>
+        <th>Total Zones</th>
+        <th>Attempts to Tops</th>
+        <th>Attempts to Zones</th>
+        <th>Route Summary</th> <!-- ✅ New column -->
+      </tr>
+    </thead>
+
+    <tbody></tbody>
+  </table>
+
+<script>
+  const socket = io();
+  let previousStats = {};
+  let lastUpdatedClimber = null;
+
+  socket.on('newResult', (data) => {
+    console.log('New result received:', data);
+    updateLeaderboard();
+  });
+
+  function showUpdateBanner() {
+    const banner = document.getElementById('updateBanner');
+    banner.style.display = 'block';
+    banner.style.opacity = '1';
+    setTimeout(() => {
+      banner.style.opacity = '0';
+    }, 2000);
+  }
+
+  function hasChanged(prev, curr) {
+    return (
+      prev.topCount !== curr.topCount ||
+      prev.zoneCount !== curr.zoneCount ||
+      prev.attemptsToTop !== curr.attemptsToTop ||
+      prev.attemptsToZone !== curr.attemptsToZone
+    );
+  }
+
+async function updateLeaderboard() {
+  try {
+    const res = await fetch('/results.json');
+    const climberStats = await res.json(); // ✅ Already aggregated
+
+    const routeList = ['Route 1', 'Route 2', 'Route 3', 'Route 4', 'Route 5', 'Route 6'];
+
+    const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
+      if (b.topCount !== a.topCount) return b.topCount - a.topCount;
+      if (b.zoneCount !== a.zoneCount) return b.zoneCount - a.zoneCount;
+      if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
+      return a.attemptsToZone - b.attemptsToZone;
+    });
+
+    const tbody = document.querySelector('#leaderboard tbody');
+    tbody.innerHTML = '';
+
+    sorted.forEach(([name, stats]) => {
+      const row = document.createElement('tr');
+
+      const routeSummary = routeList.map(route => {
+        const status = stats.routeStatus?.[route] || 'none';
+        const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
+        const topAttempt = stats.routeAttempts?.[route]?.top || '';
+
+        let label = '';
+        if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
+        else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
+        else label = 'No score';
+
+        if (status === 'top') return `<span class="bar full" data-label="${label}"></span>`;
+        if (status === 'zone') return `<span class="bar half" data-label="${label}"></span>`;
+        return `<span class="bar empty" data-label="${label}"></span>`;
+      }).join('');
+
+      row.innerHTML = `
+        <td>${name}</td>
+        <td>${stats.topCount}</td>
+        <td>${stats.zoneCount}</td>
+        <td>${stats.attemptsToTop}</td>
+        <td>${stats.attemptsToZone}</td>
+        <td class="route-summary">${routeSummary}</td>
+      `;
+
+      if (!previousStats[name] || hasChanged(previousStats[name], stats)) {
+        lastUpdatedClimber = name;
+      }
+
+      if (name === lastUpdatedClimber) {
+        row.classList.add('highlighted');
+      }
+
+      tbody.appendChild(row);
+    });
+
+    previousStats = climberStats;
+    showUpdateBanner();
+  } catch (err) {
+    console.error('Error loading leaderboard:', err);
+  }
+}
+
+ 
+
+  updateLeaderboard();
+</script>
+
+
+</body>
+</html>
