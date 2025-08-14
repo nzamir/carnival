@@ -125,7 +125,8 @@
         <th>Total Zones</th>
         <th>Attempts to Tops</th>
         <th>Attempts to Zones</th>
-        <th>Route Summary</th> <!-- ✅ New column -->
+        <th>Total Score</th>
+        <th>Route Summary</th> 
       </tr>
     </thead>
 
@@ -201,6 +202,7 @@ async function updateLeaderboard() {
         <td>${stats.zoneCount}</td>
         <td>${stats.attemptsToTop}</td>
         <td>${stats.attemptsToZone}</td>
+        <td>${stats.score.toFixed(2)}</td>
         <td class="route-summary">${routeSummary}</td>
       `;
 

@@ -116,6 +116,7 @@ app.get('/results.json', (req, res) => {
           zoneCount: 0,
           attemptsToTop: 0,
           attemptsToZone: 0,
+          score: 0,
           routeStatus: {},
           routeAttempts: {} // ✅ Add this here
         };
@@ -145,6 +146,8 @@ app.get('/results.json', (req, res) => {
         top: r.TopOnAttempt || ''
       };
     });
+    
+    stats.score += calculateScore(zoneAttempt, topAttempt);
 
     res.json(climberStats);
   } catch (err) {
@@ -246,4 +249,19 @@ function getBarHTML(status) {
   return '<span class="bar empty" data-label="No score"></span>';
 }
 
+function calculateScore(zoneAttempt, topAttempt) {
+  let score = 0;
+
+  if (zoneAttempt) {
+    const zonePenalty = Math.max(0, zoneAttempt - 1) * 0.1;
+    score += 10 - zonePenalty;
+  }
+
+  if (topAttempt) {
+    const topPenalty = Math.max(0, topAttempt - 1) * 0.1;
+    score += 15 - topPenalty;
+  }
+
+  return parseFloat(score.toFixed(2));
+}
 
