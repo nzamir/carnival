@@ -120,6 +120,7 @@
   <table id="leaderboard">
     <thead>
       <tr>
+        <th>Rank</th>
         <th>Climber</th>
         <th>Total Tops</th>
         <th>Total Zones</th>
@@ -178,7 +179,46 @@ async function updateLeaderboard() {
     const tbody = document.querySelector('#leaderboard tbody');
     tbody.innerHTML = '';
 
-    sorted.forEach(([name, stats]) => {
+   sorted.forEach(([name, stats], index) => {
+  const rank = index + 1;
+  const row = document.createElement('tr');
+
+  const routeSummary = routeList.map(route => {
+    const status = stats.routeStatus?.[route] || 'none';
+    const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
+    const topAttempt = stats.routeAttempts?.[route]?.top || '';
+
+    let label = '';
+    if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
+    else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
+    else label = 'No score';
+
+    if (status === 'top') return `<span class="bar full" data-label="${label}"></span>`;
+    if (status === 'zone') return `<span class="bar half" data-label="${label}"></span>`;
+    return `<span class="bar empty" data-label="${label}"></span>`;
+  }).join('');
+
+  row.innerHTML = `
+    <td>${rank}</td>
+    <td>${name}</td>
+    <td>${stats.topCount}</td>
+    <td>${stats.zoneCount}</td>
+    <td>${stats.attemptsToTop}</td>
+    <td>${stats.attemptsToZone}</td>
+    <td>${stats.score.toFixed(2)}</td>
+    <td class="route-summary">${routeSummary}</td>
+  `;
+
+  if (!previousStats[name] || hasChanged(previousStats[name], stats)) {
+    lastUpdatedClimber = name;
+  }
+
+  if (name === lastUpdatedClimber) {
+    row.classList.add('highlighted');
+  }
+
+  tbody.appendChild(row);
+});
       const row = document.createElement('tr');
 
       const routeSummary = routeList.map(route => {
