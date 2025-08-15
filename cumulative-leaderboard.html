@@ -201,6 +201,7 @@ async function updateLeaderboard() {
       }).join('');
 
       row.innerHTML = `
+        <td>${rank}</td>
         <td>${name}</td>
         <td>${stats.topCount}</td>
         <td>${stats.zoneCount}</td>
