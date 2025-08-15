@@ -180,11 +180,8 @@ async function updateLeaderboard() {
     tbody.innerHTML = '';
 
    sorted.forEach(([name, stats], index) => {
-  const rank = index + 1;
-
-
+      const rank = index + 1;
       const row = document.createElement('tr');
-
       const routeSummary = routeList.map(route => {
         const status = stats.routeStatus?.[route] || 'none';
         const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
@@ -201,7 +198,7 @@ async function updateLeaderboard() {
       }).join('');
 
       row.innerHTML = `
-        <td>${rank}</td>
+        <td>${rank}</td> 
         <td>${name}</td>
         <td>${stats.topCount}</td>
         <td>${stats.zoneCount}</td>
