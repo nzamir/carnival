@@ -196,19 +196,33 @@ async function updateLeaderboard() {
       const rank = index + 1;
       const row = document.createElement('tr');
       const routeSummary = routeList.map(route => {
-        const status = stats.routeStatus?.[route] || 'none';
-        const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
-        const topAttempt = stats.routeAttempts?.[route]?.top || '';
+      const status = stats.routeStatus?.[route] || 'none';
+      const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
+      const topAttempt = stats.routeAttempts?.[route]?.top || '';
 
-        let label = '';
-        if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
-        else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
-        else label = 'No score';
+      let label = '';
+      if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
+      else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
+      else label = 'No score';
 
-        if (status === 'top') return `<span class="bar full" data-label="${label}"></span>`;
-        if (status === 'zone') return `<span class="bar half" data-label="${label}"></span>`;
-        return `<span class="bar empty" data-label="${label}"></span>`;
-      }).join('');
+      if (status === 'top') {
+        return `<span class="bar full" data-label="${label}">
+                  <div>${topAttempt}</div>
+                  <div>${zoneAttempt}</div>
+                </span>`;
+        }
+      if (status === 'zone') {
+        return `<span class="bar half" data-label="${label}">
+                  <div>0</div>
+                  <div>${zoneAttempt}</div>
+                </span>`;
+        }
+      return `<span class="bar empty" data-label="${label}">
+                <div>-</div>
+                <div>-</div>
+              </span>`;
+    }).join('');
+
 
       row.innerHTML = `
         <td>${rank}</td> 
