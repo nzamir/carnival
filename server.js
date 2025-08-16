@@ -255,11 +255,16 @@ app.post('/upload-climbers', upload.single('csvFile'), (req, res) => {
     });
 });
 
-function getBarHTML(status) {
-  if (status === 'top') return '<span class="bar full" data-label="Top"></span>';
-  if (status === 'zone') return '<span class="bar half" data-label="Zone"></span>';
-  return '<span class="bar empty" data-label="No score"></span>';
+function renderBar(status, zoneAttempt, topAttempt) {
+  const zoneText = zoneAttempt ? zoneAttempt : '';
+  const topText = topAttempt ? topAttempt : '';
+  const innerHTML = `<div>${topText}</div><div>${zoneText}</div>`;
+
+  if (status === 'top') return `<span class="bar full" data-label="${zoneText}AZ${topText}AT">${innerHTML}</span>`;
+  if (status === 'zone') return `<span class="bar half" data-label="${zoneText}AZ0AT">${innerHTML}</span>`;
+  return `<span class="bar empty" data-label="No score"><div></div><div></div></span>`;
 }
+
 
 function calculateScore(zoneAttempt, topAttempt) {
   let score = 0;
