@@ -154,10 +154,18 @@ app.get('/results.json', (req, res) => {
       };
 
       // ✅ Score calculation
-      const zonePenalty = Math.max(0, zoneAttempt - 1) * 0.1;
-      const topPenalty = Math.max(0, topAttempt - 1) * 0.1;
-      const score = (r.HasZone === 'true' ? 10 - zonePenalty : 0) + (r.HasTop === 'true' ? 15 - topPenalty : 0);
+      const zoneAttempt = parseInt(r.ZoneOnAttempt, 10);
+      const topAttempt = parseInt(r.TopOnAttempt, 10);
+
+      const zonePenalty = Number.isInteger(zoneAttempt) ? Math.max(0, zoneAttempt - 1) * 0.1 : 0;
+      const topPenalty = Number.isInteger(topAttempt) ? Math.max(0, topAttempt - 1) * 0.1 : 0;
+
+      const score =
+        (r.HasZone === 'true' ? 10 - zonePenalty : 0) +
+        (r.HasTop === 'true' ? 15 - topPenalty : 0);
+
       stats.score += parseFloat(score.toFixed(2));
+
     });
 
     res.json(climberStats);
