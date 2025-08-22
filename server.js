@@ -5,6 +5,9 @@ const csvParse = require('csv-parse/sync');
 const http = require('http');
 const socketIo = require('socket.io');
 const multer = require('multer');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+
 
 const app = express();
 const server = http.createServer(app);
@@ -14,6 +17,31 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 const routes = ["Route 1", "Route 2", "Route 3", "Route 4", "Route 5", "Route 6"];
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(session({
+  secret: 'climbSecretKey',
+  resave: false,
+  saveUninitialized: true
+}));
+
+const USERNAME = 'admin';
+const PASSWORD = 'climbSecure123';
+
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === USERNAME && password === PASSWORD) {
+    req.session.authenticated = true;
+    res.redirect('https://climbing-results-points.onrender.com/'); // or wherever your protected page is
+  } else {
+    res.send('Invalid credentials. <a href="/login">Try again</a>');
+  }
+});
+
 
 // ✅ Serve climbers and routes
 app.get('/data', (req, res) => {
@@ -288,3 +316,17 @@ function calculateScore(zoneAttempt, topAttempt) {
   return parseFloat(score.toFixed(2));
 }
 
+function requireAuth(req, res, next) {
+  if (req.session.authenticated) {
+    return next();
+  }
+  res.redirect('/login');
+}
+
+app.get('/results.json', requireAuth, (req, res) => {
+  // your existing logic
+});
+
+app.get('/summary.json', requireAuth, (req, res) => {
+  // your existing logic
+});
