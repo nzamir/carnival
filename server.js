@@ -36,7 +36,7 @@ app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (username === USERNAME && password === PASSWORD) {
     req.session.authenticated = true;
-    res.redirect('https://climbing-results-points.onrender.com/'); // or wherever your protected page is
+    res.redirect('/render.html'); // or wherever your protected page is
   } else {
     res.send('Invalid credentials. <a href="/login">Try again</a>');
   }
