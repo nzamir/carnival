@@ -3,7 +3,7 @@
 <head>
   <script src="/socket.io/socket.io.js"></script>
   <meta charset="UTF-8" />
-  <title>Cumulative Leaderboard</title>
+  <title>Scoreboard</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
@@ -126,9 +126,9 @@
 </head>
 <body>
 
-  <h1>Cumulative Leaderboard</h1>
+  <h1>SCoreboard</h1>
 
-  <div id="updateBanner" style="display: none;">🔄 Leaderboard updated!</div>
+  <div id="updateBanner" style="display: none;">🔄 Scoreboard updated!</div>
 
   <table id="leaderboard">
     <thead>
@@ -253,9 +253,6 @@ async function updateLeaderboard() {
     console.error('Error loading leaderboard:', err);
   }
 }
-
- 
-
   updateLeaderboard();
 </script>
 
