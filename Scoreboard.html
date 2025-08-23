@@ -180,7 +180,7 @@ async function updateLeaderboard() {
     const res = await fetch('/results.json');
     const climberStats = await res.json(); // ✅ Already aggregated
 
-    const routeList = ['Route 1', 'Route 2', 'Route 3', 'Route 4', 'Route 5', 'Route 6'];
+    const routeList = ['Route 1', 'Route 2', 'Route 3', 'Route 4'];//, 'Route 5', 'Route 6'];
 
     const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
       if (b.topCount !== a.topCount) return b.topCount - a.topCount;
