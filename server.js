@@ -13,7 +13,7 @@ const io = socketIo(server, { cors: { origin: '*' } });
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const routes = ["Route 1", "Route 2", "Route 3"];//, "Route 4", "Route 5", "Route 6"];
+const routes = ["Route 1", "Route 2", "Route 3", "Route 4"];//, "Route 5", "Route 6"];
 
 // ✅ Serve climbers and routes
 app.get('/data', (req, res) => {
