@@ -147,3 +147,20 @@ app.get('/results.json', (req, res) => {
 // ✅ Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on ${PORT}`));
+
+app.get('/submitted.json', (req, res) => {
+  try {
+    const resultPath = path.join(__dirname, 'result.csv');
+    if (!fs.existsSync(resultPath)) return res.json([]);
+
+    const records = csvParse.parse(fs.readFileSync(resultPath, 'utf8'), { columns: true });
+    const submitted = records.map(r => ({
+      climber: r.Climber,
+      route: r.Route
+    }));
+
+    res.json(submitted);
+  } catch (err) {
+    res.status(500).json({ error: 'Error reading submissions' });
+  }
+});
