@@ -143,6 +143,11 @@
       const { climbers, routes } = await dataRes.json();
       const submitted = await submittedRes.json();
 
+      if (!Array.isArray(submitted)) {
+        throw new Error('Submitted data is not an array');
+      }
+
+
       const climberSelect = document.getElementById('climber');
       const routeSelect = document.getElementById('route');
       const summaryBox = document.getElementById('submittedSummary');

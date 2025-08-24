@@ -161,6 +161,8 @@ app.get('/submitted.json', (req, res) => {
 
     res.json(submitted);
   } catch (err) {
-    res.status(500).json({ error: 'Error reading submissions' });
+    console.error('Error in /submitted.json:', err);
+    res.status(500).json([]);
   }
 });
+
