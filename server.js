@@ -154,15 +154,14 @@ app.get('/results.json', (req, res) => {
       };
 
       // ✅ Score calculation
-      const zoneAttempt = parseInt(r.ZoneOnAttempt || 0, 10);
-      const topAttempt = parseInt(r.TopOnAttempt || 0, 10);
+      const zAttempt = parseInt(r.ZoneOnAttempt || 0, 10);
+      const tAttempt = parseInt(r.TopOnAttempt || 0, 10);
 
-      // Determine the first successful attempt
       let firstSuccessAttempt = 0;
       if (r.HasTop === 'true') {
-        firstSuccessAttempt = topAttempt;
+        firstSuccessAttempt = tAttempt;
       } else if (r.HasZone === 'true') {
-        firstSuccessAttempt = zoneAttempt;
+        firstSuccessAttempt = zAttempt;
       }
 
       const penalty = firstSuccessAttempt > 1 ? (firstSuccessAttempt - 1) * 0.1 : 0;
