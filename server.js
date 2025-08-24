@@ -97,16 +97,11 @@ app.post('/submit', (req, res) => {
 app.get('/results.json', (req, res) => {
   try {
     const resultPath = path.join(__dirname, 'result.csv');
-
-    // ✅ Check if file exists first
-    if (!fs.existsSync(resultPath)) {
-      return res.json({});
-    }
+    if (!fs.existsSync(resultPath)) return res.json([]);
 
     const fileContent = fs.readFileSync(resultPath, 'utf8');
     const records = csvParse.parse(fileContent, { columns: true, skip_empty_lines: true });
 
-    // ✅ Your aggregation logic here...
     const climberStats = {};
     const seenRoutes = new Set();
 
@@ -119,6 +114,7 @@ app.get('/results.json', (req, res) => {
 
       if (!climberStats[name]) {
         climberStats[name] = {
+          name,
           topCount: 0,
           zoneCount: 0,
           attemptsToTop: 0,
@@ -130,17 +126,17 @@ app.get('/results.json', (req, res) => {
       }
 
       const stats = climberStats[name];
-      const zoneAttempt = parseInt(r.ZoneOnAttempt || 0, 10);
-      const topAttempt = parseInt(r.TopOnAttempt || 0, 10);
+      const zAttempt = parseInt(r.ZoneOnAttempt || 0, 10);
+      const tAttempt = parseInt(r.TopOnAttempt || 0, 10);
 
       if (r.HasZone === 'true') {
         stats.zoneCount += 1;
-        stats.attemptsToZone += zoneAttempt;
+        stats.attemptsToZone += zAttempt;
       }
 
       if (r.HasTop === 'true') {
         stats.topCount += 1;
-        stats.attemptsToTop += topAttempt;
+        stats.attemptsToTop += tAttempt;
         stats.routeStatus[route] = 'top';
       } else if (r.HasZone === 'true') {
         stats.routeStatus[route] = 'zone';
@@ -149,14 +145,11 @@ app.get('/results.json', (req, res) => {
       }
 
       stats.routeAttempts[route] = {
-        zone: zoneAttempt || '',
-        top: topAttempt || ''
+        zone: zAttempt || '',
+        top: tAttempt || ''
       };
 
-      // ✅ Score calculation
-      const zAttempt = parseInt(r.ZoneOnAttempt || 0, 10);
-      const tAttempt = parseInt(r.TopOnAttempt || 0, 10);
-
+      // ✅ Single penalty logic
       let firstSuccessAttempt = 0;
       if (r.HasTop === 'true') {
         firstSuccessAttempt = tAttempt;
@@ -168,16 +161,32 @@ app.get('/results.json', (req, res) => {
       const score = (r.HasZone === 'true' || r.HasTop === 'true') ? 25 - penalty : 0;
 
       stats.score += parseFloat(score.toFixed(2));
-
-
     });
 
-    res.json(climberStats);
+    // ✅ Convert to array and rank
+    const rankedArray = Object.values(climberStats)
+      .sort((a, b) => b.score - a.score);
+
+    let currentRank = 1;
+    let previousScore = null;
+
+    rankedArray.forEach((climber, index) => {
+      if (climber.score === previousScore) {
+        climber.rank = currentRank;
+      } else {
+        currentRank = index + 1;
+        climber.rank = currentRank;
+        previousScore = climber.score;
+      }
+    });
+
+    res.json(rankedArray);
   } catch (err) {
     console.error('Error reading result.csv:', err.message);
     res.status(500).json({ error: 'Error reading result.csv', details: err.message });
   }
 });
+
 
 
 
