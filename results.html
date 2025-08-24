@@ -129,7 +129,11 @@
       renderAttempts();
       await loadFormOptions();
     } else {
-      alert('Error submitting result');
+      if (!res.ok) {
+        const errorText = await res.text();
+        alert('Error submitting result: ' + errorText);
+        return;
+}
     }
   });
 
