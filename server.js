@@ -31,40 +31,70 @@ app.get('/data', (req, res) => {
 // ✅ Handle result submissions
 app.post('/submit', (req, res) => {
   const { climber, route, attempts } = req.body;
-  if (!climber || !route || !Array.isArray(attempts)) {
+
+  // 🔒 Validate input structure
+  if (
+    typeof climber !== 'string' ||
+    typeof route !== 'string' ||
+    !Array.isArray(attempts) ||
+    attempts.length === 0 ||
+    attempts.some(a => typeof a.zone !== 'boolean' || typeof a.top !== 'boolean')
+  ) {
     return res.status(400).send('Missing or invalid fields');
   }
 
+  // 🧠 Validate logical flow: no top before zone
   let zoneAchieved = false;
-  for (let a of attempts) {
-    if (a.zone) zoneAchieved = true;
+  for (let i = 0; i < attempts.length; i++) {
+    const a = attempts[i];
     if (a.top && !a.zone && !zoneAchieved) {
-      return res.status(400).send(`Top before zone is invalid`);
+      return res.status(400).send(`Top before zone is invalid on attempt ${i + 1}`);
     }
+    if (a.zone) zoneAchieved = true;
   }
 
   const resultPath = path.join(__dirname, 'result.csv');
+
+  // 📄 Ensure CSV file exists
   if (!fs.existsSync(resultPath)) {
     fs.writeFileSync(resultPath, 'Timestamp,Climber,Route,TotalAttempts,HasZone,HasTop,ZoneOnAttempt,TopOnAttempt\n');
-  } else {
-    const existing = csvParse.parse(fs.readFileSync(resultPath, 'utf8'), { columns: true });
-    if (existing.find(r => r.Climber === climber && r.Route === route)) {
-      return res.status(400).json({ error: 'Already submitted' });
-    }
   }
 
+  // 🔍 Check for duplicate submission
+  try {
+    const existing = csvParse.parse(fs.readFileSync(resultPath, 'utf8'), { columns: true });
+    if (existing.find(r => r.Climber === climber && r.Route === route)) {
+      return res.status(400).send('Already submitted');
+    }
+  } catch (err) {
+    console.error('CSV parse error:', err);
+    return res.status(500).send('Error reading result file');
+  }
+
+  // ✅ Compute scoring fields
   const hasZone = attempts.some(a => a.zone);
   const hasTop = attempts.some(a => a.top);
-  const zoneOnAttempt = attempts.findIndex(a => a.zone) + 1 || '';
-  const topOnAttempt = attempts.findIndex(a => a.top) + 1 || '';
+
+  const zoneIndex = attempts.findIndex(a => a.zone);
+  const topIndex = attempts.findIndex(a => a.top);
+
+  const zoneOnAttempt = zoneIndex >= 0 ? zoneIndex + 1 : '';
+  const topOnAttempt = topIndex >= 0 ? topIndex + 1 : '';
+
   const line = `${new Date().toISOString()},${climber},${route},${attempts.length},${hasZone},${hasTop},${zoneOnAttempt},${topOnAttempt}\n`;
 
+  // 📝 Write to CSV
   fs.appendFile(resultPath, line, err => {
-    if (err) return res.status(500).send('Server error');
+    if (err) {
+      console.error('Error writing to result.csv:', err);
+      return res.status(500).send('Server error');
+    }
+
     io.emit('newResult', { climber, route });
     res.status(200).send('Saved');
   });
 });
+
 
 // ✅ Serve ranked results
 app.get('/results.json', (req, res) => {
