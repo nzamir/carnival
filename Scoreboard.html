@@ -126,7 +126,7 @@
 </head>
 <body>
 
-  <h1>SCoreboard</h1>
+  <h1>Scoreboard</h1>
 
   <div id="updateBanner" style="display: none;">🔄 Scoreboard updated!</div>
 
@@ -182,70 +182,64 @@ async function updateLeaderboard() {
 
     const routeList = ['Route 1', 'Route 2', 'Route 3', 'Route 4'];//, 'Route 5', 'Route 6'];
 
-    const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
-      if (b.topCount !== a.topCount) return b.topCount - a.topCount;
-      if (b.zoneCount !== a.zoneCount) return b.zoneCount - a.zoneCount;
-      if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
-      return a.attemptsToZone - b.attemptsToZone;
-    });
+    const sorted = climberStats.sort((a, b) => a.rank - b.rank);
+
 
     const tbody = document.querySelector('#leaderboard tbody');
     tbody.innerHTML = '';
 
-   sorted.forEach(([name, stats], index) => {
-      const rank = index + 1;
-      const row = document.createElement('tr');
-      const routeSummary = routeList.map(route => {
-      const status = stats.routeStatus?.[route] || 'none';
-      const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
-      const topAttempt = stats.routeAttempts?.[route]?.top || '';
+sorted.forEach((stats) => {
+  const row = document.createElement('tr');
+  const routeSummary = routeList.map(route => {
+    const status = stats.routeStatus?.[route] || 'none';
+    const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
+    const topAttempt = stats.routeAttempts?.[route]?.top || '';
 
-        let label = '';
-        if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
-        else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
-        else label = 'No score';
+    let label = '';
+    if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
+    else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
+    else label = 'No score';
 
-        if (status === 'top') {
-          return `<span class="bar full" data-label="${label}">
-                    <div>${topAttempt}</div>
-                    <div>${zoneAttempt}</div>
-                  </span>`;
-        }
-        if (status === 'zone') {
-          return `<span class="bar half" data-label="${label}">
-                    <div>0</div>
-                    <div>${zoneAttempt}</div>
-                  </span>`;
-        }
-        return `<span class="bar empty" data-label="${label}">
-                  <div>-</div>
-                  <div>-</div>
-                </span>`;
-      }).join('');
+    if (status === 'top') {
+      return `<span class="bar full" data-label="${label}">
+                <div>${topAttempt}</div>
+                <div>${zoneAttempt}</div>
+              </span>`;
+    }
+    if (status === 'zone') {
+      return `<span class="bar half" data-label="${label}">
+                <div>0</div>
+                <div>${zoneAttempt}</div>
+              </span>`;
+    }
+    return `<span class="bar empty" data-label="${label}">
+              <div>-</div>
+              <div>-</div>
+            </span>`;
+  }).join('');
 
+  row.innerHTML = `
+    <td>${stats.rank}</td> 
+    <td>${stats.name}</td>
+    <td>${stats.topCount}</td>
+    <td>${stats.zoneCount}</td>
+    <td>${stats.attemptsToTop}</td>
+    <td>${stats.attemptsToZone}</td>
+    <td>${stats.score.toFixed(2)}</td>
+    <td class="route-summary">${routeSummary}</td>
+  `;
 
+  if (!previousStats[stats.name] || hasChanged(previousStats[stats.name], stats)) {
+    lastUpdatedClimber = stats.name;
+  }
 
-      row.innerHTML = `
-        <td>${rank}</td> 
-        <td>${name}</td>
-        <td>${stats.topCount}</td>
-        <td>${stats.zoneCount}</td>
-        <td>${stats.attemptsToTop}</td>
-        <td>${stats.attemptsToZone}</td>
-        <td>${stats.score.toFixed(2)}</td>
-        <td class="route-summary">${routeSummary}</td>
-      `;
+  if (stats.name === lastUpdatedClimber) {
+    row.classList.add('highlighted');
+  }
 
-      if (!previousStats[name] || hasChanged(previousStats[name], stats)) {
-        lastUpdatedClimber = name;
-      }
+  tbody.appendChild(row);
+});
 
-      if (name === lastUpdatedClimber) {
-        row.classList.add('highlighted');
-      }
-
-      tbody.appendChild(row);
-    });
 
     previousStats = climberStats;
     showUpdateBanner();
