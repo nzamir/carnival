@@ -150,10 +150,21 @@ app.get('/results.json', (req, res) => {
         top: tAttempt || ''
       };
 
-      let firstSuccess = hasTop ? tAttempt : hasZone ? zAttempt : 0;
-      const penalty = firstSuccess > 1 ? (firstSuccess - 1) * 0.1 : 0;
-      const score = (hasZone || hasTop) ? 25 - penalty : 0;
+      let score = 0;
+      let firstSuccessAttempt = 0;
+
+      if (hasTop) {
+        score = 10 + 15; // zone + top
+        firstSuccessAttempt = tAttempt;
+      } else if (hasZone) {
+        score = 10; // zone only
+        firstSuccessAttempt = zAttempt;
+      }
+
+      const penalty = firstSuccessAttempt > 1 ? (firstSuccessAttempt - 1) * 0.1 : 0;
+      score -= penalty;
       stats.score += parseFloat(score.toFixed(2));
+
     });
 
     const ranked = Object.values(climberStats).sort((a, b) => b.score - a.score);
