@@ -196,3 +196,12 @@ app.get('/submitted.json', (req, res) => {
   }
 });
 
+let existing = [];
+try {
+  const raw = fs.readFileSync(resultPath, 'utf8');
+  existing = csvParse.parse(raw, { columns: true });
+} catch (err) {
+  console.error('CSV parse error:', err.message);
+  return res.status(500).send('Error reading result file');
+}
+
