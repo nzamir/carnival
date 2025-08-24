@@ -154,12 +154,19 @@ app.get('/results.json', (req, res) => {
       };
 
       // ✅ Score calculation
-      const zonePenalty = Number.isInteger(zoneAttempt) && zoneAttempt > 0 ? (zoneAttempt - 1) * 0.1 : 0;
-      const topPenalty = Number.isInteger(topAttempt) && topAttempt > 0 ? (topAttempt - 1) * 0.1 : 0;
+      const zoneAttempt = parseInt(r.ZoneOnAttempt || 0, 10);
+      const topAttempt = parseInt(r.TopOnAttempt || 0, 10);
 
-      const score =
-        (r.HasZone === 'true' ? 10 - zonePenalty : 0) +
-        (r.HasTop === 'true' ? 15 - topPenalty : 0);
+      // Determine the first successful attempt
+      let firstSuccessAttempt = 0;
+      if (r.HasTop === 'true') {
+        firstSuccessAttempt = topAttempt;
+      } else if (r.HasZone === 'true') {
+        firstSuccessAttempt = zoneAttempt;
+      }
+
+      const penalty = firstSuccessAttempt > 1 ? (firstSuccessAttempt - 1) * 0.1 : 0;
+      const score = (r.HasZone === 'true' || r.HasTop === 'true') ? 25 - penalty : 0;
 
       stats.score += parseFloat(score.toFixed(2));
 
