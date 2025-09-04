@@ -131,124 +131,54 @@
   <div id="updateBanner" style="display: none;">🔄 Scoreboard updated!</div>
 
   <table id="leaderboard">
-    <thead>
-      <tr>
-        <th>Rank</th>
-        <th>Climber</th>
-        <th>Total Tops</th>
-        <th>Total Zones</th>
-        <th>Attempts to Tops</th>
-        <th>Attempts to Zones</th>
-        <th>Total Score</th>
-        <th>Route Summary</th> 
-      </tr>
-    </thead>
-
-    <tbody></tbody>
+  <thead>
+    <tr>
+      <th>Rank</th>
+      <th>Climber</th>
+      <th>Bib</th>
+      <th>Lane 1 Time</th>
+      <th>Lane 2 Time</th>
+      <th>Fastest Time</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
   </table>
 
+
 <script>
-  const socket = io();
-  let previousStats = {};
-  let lastUpdatedClimber = null;
+  async function loadSpeedLeaderboard() {
+    try {
+      const res = await fetch('/speed-results.json');
+      const results = await res.json();
 
-  socket.on('newResult', (data) => {
-    console.log('New result received:', data);
-    updateLeaderboard();
-  });
+      // ✅ Sort by rank (already sorted server-side, but just in case)
+      results.sort((a, b) => a.rank - b.rank);
 
-  function showUpdateBanner() {
-    const banner = document.getElementById('updateBanner');
-    banner.style.display = 'block';
-    banner.style.opacity = '1';
-    setTimeout(() => {
-      banner.style.opacity = '0';
-    }, 2000);
-  }
+      // ✅ Render leaderboard
+      const tbody = document.querySelector('#leaderboard tbody');
+      tbody.innerHTML = '';
 
-  function hasChanged(prev, curr) {
-    return (
-      prev.topCount !== curr.topCount ||
-      prev.zoneCount !== curr.zoneCount ||
-      prev.attemptsToTop !== curr.attemptsToTop ||
-      prev.attemptsToZone !== curr.attemptsToZone
-    );
-  }
+      results.forEach(r => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${r.rank}</td>
+          <td>${r.name}</td>
+          <td>${r.bib}</td>
+          <td>${r.lane1 || '-'}</td>
+          <td>${r.lane2 || '-'}</td>
+          <td><strong>${r.fastest}</strong></td>
+        `;
+        tbody.appendChild(row);
+      });
 
-async function updateLeaderboard() {
-  try {
-    const res = await fetch('/results.json');
-    const climberStats = await res.json(); // ✅ Already aggregated
-
-    const routeList = ['Route 1', 'Route 2', 'Route 3', 'Route 4'];//, 'Route 5', 'Route 6'];
-
-    const sorted = climberStats.sort((a, b) => a.rank - b.rank);
-
-
-    const tbody = document.querySelector('#leaderboard tbody');
-    tbody.innerHTML = '';
-
-sorted.forEach((stats) => {
-  const row = document.createElement('tr');
-  const routeSummary = routeList.map(route => {
-    const status = stats.routeStatus?.[route] || 'none';
-    const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
-    const topAttempt = stats.routeAttempts?.[route]?.top || '';
-
-    let label = '';
-    if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
-    else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
-    else label = 'No score';
-
-    if (status === 'top') {
-      return `<span class="bar full" data-label="${label}">
-                <div>${topAttempt}</div>
-                <div>${zoneAttempt}</div>
-              </span>`;
+    } catch (err) {
+      console.error('Error loading speed leaderboard:', err);
     }
-    if (status === 'zone') {
-      return `<span class="bar half" data-label="${label}">
-                <div>0</div>
-                <div>${zoneAttempt}</div>
-              </span>`;
-    }
-    return `<span class="bar empty" data-label="${label}">
-              <div>-</div>
-              <div>-</div>
-            </span>`;
-  }).join('');
-
-  row.innerHTML = `
-    <td>${stats.rank}</td> 
-    <td>${stats.name}</td>
-    <td>${stats.topCount}</td>
-    <td>${stats.zoneCount}</td>
-    <td>${stats.attemptsToTop}</td>
-    <td>${stats.attemptsToZone}</td>
-    <td>${stats.score.toFixed(2)}</td>
-    <td class="route-summary">${routeSummary}</td>
-  `;
-
-  if (!previousStats[stats.name] || hasChanged(previousStats[stats.name], stats)) {
-    lastUpdatedClimber = stats.name;
   }
 
-  if (stats.name === lastUpdatedClimber) {
-    row.classList.add('highlighted');
-  }
-
-  tbody.appendChild(row);
-});
-
-
-    previousStats = climberStats;
-    showUpdateBanner();
-  } catch (err) {
-    console.error('Error loading leaderboard:', err);
-  }
-}
-  updateLeaderboard();
+  loadSpeedLeaderboard();
 </script>
+
 
 
 </body>

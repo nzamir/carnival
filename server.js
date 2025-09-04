@@ -95,6 +95,62 @@ app.post('/submit', (req, res) => {
   });
 });
 
+app.put('/submit', (req, res) => {
+  const { bib, climber, lane1Time, lane2Time } = req.body;
+  const resultPath = path.join(__dirname, 'result.csv');
+
+  if (!bib || !climber || (!lane1Time && !lane2Time)) {
+    return res.status(400).send('Missing required fields');
+  }
+
+  // Ensure CSV exists
+  if (!fs.existsSync(resultPath)) {
+    fs.writeFileSync(resultPath, 'Timestamp,Bib,Climber,Lane1Time,Lane2Time\n');
+  }
+
+  // Load existing data
+  let records = [];
+  try {
+    records = csvParse.parse(fs.readFileSync(resultPath, 'utf8'), { columns: true });
+  } catch (err) {
+    console.error('CSV parse error:', err);
+    return res.status(500).send('Error reading result file');
+  }
+
+  // Find existing entry
+  const existing = records.find(r => r.Bib === bib);
+
+  if (existing) {
+    if (lane1Time !== undefined && existing.Lane1Time) {
+      return res.status(400).send('Lane 1 time already submitted');
+    }
+    if (lane2Time !== undefined && existing.Lane2Time) {
+      return res.status(400).send('Lane 2 time already submitted');
+    }
+
+    if (lane1Time !== undefined) existing.Lane1Time = lane1Time;
+    if (lane2Time !== undefined) existing.Lane2Time = lane2Time;
+  } else {
+    const newEntry = {
+      Timestamp: new Date().toISOString(),
+      Bib: bib,
+      Climber: climber,
+      Lane1Time: lane1Time ?? '',
+      Lane2Time: lane2Time ?? ''
+    };
+    records.push(newEntry);
+  }
+
+  // Write updated records
+  const header = 'Timestamp,Bib,Climber,Lane1Time,Lane2Time\n';
+  const lines = records.map(r =>
+    `${r.Timestamp},${r.Bib},${r.Climber},${r.Lane1Time},${r.Lane2Time}`
+  );
+  fs.writeFileSync(resultPath, header + lines.join('\n'));
+
+  res.status(200).send('Timing saved');
+});
+
 
 // ✅ Serve ranked results
 app.get('/results.json', (req, res) => {
@@ -184,6 +240,59 @@ app.get('/results.json', (req, res) => {
     res.status(500).json({ error: 'Error reading results' });
   }
 });
+
+app.get('/speed-results.json', (req, res) => {
+  const resultPath = path.join(__dirname, 'result.csv');
+  if (!fs.existsSync(resultPath)) return res.json([]);
+
+  try {
+    const records = csvParse.parse(fs.readFileSync(resultPath, 'utf8'), { columns: true });
+    const climberTimes = [];
+
+    for (const r of records) {
+      const name = r.Climber;
+      const bib = r.Bib;
+      const lane1 = parseFloat(r.Lane1Time);
+      const lane2 = parseFloat(r.Lane2Time);
+
+      const validTimes = [lane1, lane2].filter(t => !isNaN(t));
+      if (validTimes.length === 0) continue;
+
+      const fastest = Math.min(...validTimes);
+
+      climberTimes.push({
+        name,
+        bib,
+        lane1: isNaN(lane1) ? '' : lane1,
+        lane2: isNaN(lane2) ? '' : lane2,
+        fastest,
+      });
+    }
+
+    // Sort by fastest time
+    climberTimes.sort((a, b) => a.fastest - b.fastest);
+
+    // Assign ranks
+    let currentRank = 1;
+    let prevTime = null;
+    climberTimes.forEach((c, i) => {
+      if (c.fastest === prevTime) {
+        c.rank = currentRank;
+      } else {
+        currentRank = i + 1;
+        c.rank = currentRank;
+        prevTime = c.fastest;
+      }
+    });
+
+    res.json(climberTimes);
+  } catch (err) {
+    console.error('Error reading speed results:', err);
+    res.status(500).json({ error: 'Error reading results' });
+  }
+});
+
+
 
 // ✅ Start server
 const PORT = process.env.PORT || 3000;
