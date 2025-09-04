@@ -207,12 +207,26 @@ app.get('/submitted.json', (req, res) => {
   }
 });
 
-//let existing = [];
-//try {
-//  const raw = fs.readFileSync(resultPath, 'utf8');
-//  existing = csvParse.parse(raw, { columns: true });
-//} catch (err) {
-//  console.error('CSV parse error:', err.message);
-//  return res.status(500).send('Error reading result file');
-//}
+app.get('/climbers/:bib', (req, res) => {
+  const bib = req.params.bib.trim();
+  const csvPath = path.join(__dirname, 'climbers.csv');
+
+  try {
+    const fileContent = fs.readFileSync(csvPath, 'utf8');
+    const records = csvParse.parse(fileContent, { skip_empty_lines: true });
+
+    for (const row of records) {
+      const [bibNum, name] = row.map(cell => cell.trim());
+      if (bibNum === bib) {
+        return res.json({ name });
+      }
+    }
+
+    res.status(404).json({ error: 'Climber not found' });
+  } catch (err) {
+    console.error('Error reading climbers.csv:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
