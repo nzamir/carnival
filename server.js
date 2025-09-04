@@ -122,10 +122,10 @@ app.put('/submit', (req, res) => {
 
   if (existing) {
     if (lane1Time !== undefined && existing.Lane1Time) {
-      return res.status(400).send('Lane 1 time already submitted');
+      return res.status(400).send('Lane A time already submitted');
     }
     if (lane2Time !== undefined && existing.Lane2Time) {
-      return res.status(400).send('Lane 2 time already submitted');
+      return res.status(400).send('Lane B time already submitted');
     }
 
     if (lane1Time !== undefined) existing.Lane1Time = lane1Time;
