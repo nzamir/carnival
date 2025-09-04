@@ -77,7 +77,7 @@
         });
 
         if (res.ok) {
-          document.getElementById('message').textContent = `✅ Time submitted!`;
+          document.getElementById('message').textContent = `✅ Lane ${lane} time submitted!`;
           e.target.reset();
           document.getElementById('climberNameDisplay').textContent = '';
         } else {
