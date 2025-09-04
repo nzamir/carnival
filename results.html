@@ -2,210 +2,105 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Climbing Competition Results</title>
+  <title>Lane Timing Submission</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     form { display: flex; flex-direction: column; gap: 10px; max-width: 400px; }
     label { font-weight: bold; }
+    input[type="number"], input[type="text"] { padding: 6px; width: 100%; }
     button { padding: 8px; cursor: pointer; }
-    .attempt-box {
-      border: 1px solid #ccc;
-      padding: 8px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      background-color: #f9f9f9;
-    }
-    .attempt-box button {
-      margin-right: 8px;
-    }
-    #error { color: red; font-weight: bold; }
+    #error, #message { color: red; font-weight: bold; }
+    #climberNameDisplay { font-weight: bold; color: #555; }
   </style>
 </head>
 <body>
 
-  <h1>Enter Climber Result</h1>
+  <h1>Submit Lane Timing</h1>
   <div id="error"></div>
 
-  <form id="resultForm">
+  <form id="timingForm">
     <label>Bib Number:
       <input type="text" id="bibInput" required placeholder="Enter Bib Number" />
     </label>
-    <div id="climberNameDisplay" style="font-weight: bold; color: #555;"></div>
-    <div id="submittedSummary" style="font-weight: bold; color: #555;"></div>
+    <div id="climberNameDisplay"></div>
 
-    <label>Route Number:
-      <select id="route" required>
-        <option value="">Loading routes...</option>
+    <label>Lane:
+      <select id="laneSelect" required>
+        <option value="">Select Lane</option>
+        <option value="1">Lane 1</option>
+        <option value="2">Lane 2</option>
       </select>
     </label>
 
-    <label>Attempts:</label>
-    <div id="attemptsContainer"></div>
-    <button type="button" id="addAttempt">➕ Add Attempt</button>
-    <div id="validationWarning" style="color: red; font-weight: bold;"></div>
+    <label>Time (seconds):
+      <input type="number" id="laneTime" min="0" step="0.01" required />
+    </label>
+
     <button type="submit">Submit</button>
+    <div id="message"></div>
   </form>
 
 <script>
-  let attempts = [];
-  let allRoutes = [];
-  let submittedData = [];
-
   document.addEventListener('DOMContentLoaded', () => {
-    loadFormOptions();
-  });
-
-  document.getElementById('bibInput').addEventListener('blur', async (e) => {
-    const bib = e.target.value.trim();
-    if (bib) {
-      const climberName = await fetchClimberName(bib);
-      if (climberName) {
-        updateRouteOptions(climberName);
+    document.getElementById('bibInput').addEventListener('blur', async (e) => {
+      const bib = e.target.value.trim();
+      if (bib) {
+        const climberName = await fetchClimberName(bib);
+        document.getElementById('climberNameDisplay').textContent = climberName
+          ? `Climber: ${climberName}`
+          : '❌ Bib not found';
       }
-    }
-  });
-
-  document.getElementById('addAttempt').addEventListener('click', () => {
-    const attemptNum = attempts.length + 1;
-    const attempt = { number: attemptNum, zone: false, top: false };
-    attempts.push(attempt);
-    renderAttempts();
-  });
-
-  function renderAttempts() {
-    const container = document.getElementById('attemptsContainer');
-    container.innerHTML = '';
-
-    attempts.forEach((a, index) => {
-      const div = document.createElement('div');
-      div.className = 'attempt-box';
-      div.innerHTML = `
-        <strong>Attempt ${a.number}</strong>
-        <button type="button" onclick="toggleZone(${index})">
-          ${a.zone ? 'Zone ✅' : 'Zone ❌'}
-        </button>
-        <button type="button" onclick="toggleTop(${index})">
-          ${a.top ? 'Top ✅' : 'Top ❌'}
-        </button>
-      `;
-      container.appendChild(div);
     });
-  }
 
-  function toggleZone(index) {
-    attempts[index].zone = !attempts[index].zone;
-    renderAttempts();
-  }
+    document.getElementById('timingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-  function toggleTop(index) {
-    attempts[index].top = !attempts[index].top;
-    renderAttempts();
-  }
+      const bib = document.getElementById('bibInput').value.trim();
+      const climber = document.getElementById('climberNameDisplay').textContent.replace('Climber: ', '');
+      const lane = document.getElementById('laneSelect').value;
+      const time = parseFloat(document.getElementById('laneTime').value);
+
+      if (!bib || !climber || !lane || isNaN(time)) {
+        document.getElementById('message').textContent = 'Please fill in all fields correctly.';
+        return;
+      }
+
+      const payload = lane === '1'
+        ? { bib, climber, lane1Time: time }
+        : { bib, climber, lane2Time: time };
+
+      try {
+        const res = await fetch('/submit', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          document.getElementById('message').textContent = `✅ Lane ${lane} time submitted!`;
+          e.target.reset();
+          document.getElementById('climberNameDisplay').textContent = '';
+        } else {
+          const errorText = await res.text();
+          document.getElementById('message').textContent = '❌ ' + errorText;
+        }
+      } catch (err) {
+        document.getElementById('message').textContent = '❌ Server error';
+        console.error(err);
+      }
+    });
+  });
 
   async function fetchClimberName(bib) {
     try {
       const res = await fetch(`/climbers/${bib}`);
-      if (!res.ok) throw new Error('Climber not found');
+      if (!res.ok) throw new Error();
       const data = await res.json();
-      document.getElementById('climberNameDisplay').textContent = `Climber: ${data.name}`;
       return data.name;
-    } catch (err) {
-      document.getElementById('climberNameDisplay').textContent = '❌ Bib not found';
+    } catch {
       return null;
     }
   }
-
-  async function loadFormOptions() {
-    try {
-      const [dataRes, submittedRes] = await Promise.all([
-        fetch('/data'),
-        fetch('/submitted.json')
-      ]);
-
-      const { routes } = await dataRes.json();
-      allRoutes = routes;
-      submittedData = await submittedRes.json();
-      updateRouteOptions('');
-    } catch (err) {
-      document.getElementById('error').textContent = 'Error loading form: ' + err.message;
-      console.error(err);
-    }
-  }
-
-  function updateRouteOptions(climberName) {
-    const routeSelect = document.getElementById('route');
-    const summaryBox = document.getElementById('submittedSummary');
-
-    routeSelect.innerHTML = '<option value="">Select Route</option>';
-    const submittedRoutes = [];
-
-    allRoutes.forEach(route => {
-      const isSubmitted = submittedData.some(entry =>
-        entry.climber === climberName && entry.route === route
-      );
-
-      if (isSubmitted) submittedRoutes.push(route);
-
-      const option = document.createElement('option');
-      option.value = route;
-      option.textContent = route + (isSubmitted ? ' (submitted)' : '');
-      option.disabled = isSubmitted;
-      routeSelect.appendChild(option);
-    });
-
-    if (!climberName) {
-      summaryBox.textContent = '';
-    } else if (submittedRoutes.length === 0) {
-      summaryBox.textContent = 'No routes submitted yet.';
-    } else {
-      summaryBox.textContent = `Already submitted: ${submittedRoutes.join(', ')}`;
-    }
-  }
-
-  document.getElementById('resultForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const bib = document.getElementById('bibInput').value.trim();
-    const climber = document.getElementById('climberNameDisplay').textContent.replace('Climber: ', '');
-    const route = document.getElementById('route').value;
-
-    const routeOption = document.querySelector(`#route option[value="${route}"]`);
-    if (routeOption && routeOption.disabled) {
-      alert('This result has already been submitted.');
-      return;
-    }
-
-    let hasZone = false;
-    for (let i = 0; i < attempts.length; i++) {
-      const a = attempts[i];
-      if (a.top && !a.zone && !hasZone) {
-        alert(`Invalid result: Top achieved on attempt ${a.number} before any zone was recorded.`);
-        return;
-      }
-      if (a.zone) hasZone = true;
-    }
-
-    const data = { bib, climber, route, attempts };
-
-    const res = await fetch('/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-
-    if (res.ok) {
-      alert('Result submitted successfully!');
-      e.target.reset();
-      document.getElementById('climberNameDisplay').textContent = '';
-      document.getElementById('submittedSummary').textContent = '';
-      attempts = [];
-      renderAttempts();
-      await loadFormOptions();
-    } else {
-      const errorText = await res.text();
-      alert('Error submitting result: ' + errorText);
-    }
-  });
 </script>
 
 </body>
