@@ -3,27 +3,59 @@
 <head>
   <meta charset="UTF-8" />
   <title>Task Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    form {
+      max-width: 400px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+  </style>
 </head>
 <body>
   <h1>Employee Task Tracker</h1>
   <form id="task-form">
-    <label for="emp-id">Employee ID:</label>
-    <input type="text" id="emp-id" name="emp-id" required />
+    <div class="form-group">
+      <label for="emp-id">Employee ID:</label>
+      <input type="text" id="emp-id" name="emp-id" required />
+    </div>
 
-    <label for="emp-name">Employee Name:</label>
-    <input type="text" id="emp-name" name="emp-name" disabled />
+    <div class="form-group">
+      <label for="emp-name">Employee Name:</label>
+      <input type="text" id="emp-name" name="emp-name" disabled />
+    </div>
 
-    <label for="department">Department:</label>
-    <select id="department" name="department"></select>
+    <div class="form-group">
+      <label for="department">Department:</label>
+      <select id="department" name="department"></select>
+    </div>
 
-    <label for="task">Task:</label>
-    <select id="task" name="task"></select>
+    <div class="form-group">
+      <label for="task">Task:</label>
+      <select id="task" name="task"></select>
+    </div>
 
-    <label for="status">Status:</label>
-    <select id="status" name="status">
-      <option value="Completed">Completed</option>
-      <option value="Attempted">Attempted</option>
-    </select>
+    <div class="form-group">
+      <label for="status">Status:</label>
+      <select id="status" name="status">
+        <option value="Completed">Completed</option>
+        <option value="Attempted">Attempted</option>
+      </select>
+    </div>
 
     <button type="submit">Submit</button>
   </form>
