@@ -71,6 +71,11 @@ document.getElementById('task-form').addEventListener('submit', async function (
 
     const result = await res.json();
     alert(result.message);
+    document.getElementById('task-form').reset();
+    const radios = document.querySelectorAll('input[name="task"]');
+    radios.forEach(r => r.checked = false);
+    document.getElementById('task-options').innerHTML = '';
+
   } catch (err) {
     console.error('Error submitting form:', err);
     alert('Submission failed.');
