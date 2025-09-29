@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Lane Timing Submission</title>
+  <title>Carnival Score Submission</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     form { display: flex; flex-direction: column; gap: 10px; max-width: 400px; }
     label { font-weight: bold; }
-    input[type="number"], input[type="text"] { padding: 6px; width: 100%; }
-    button { padding: 8px; cursor: pointer; }
+    input, select, button { padding: 6px; width: 100%; }
+    button { cursor: pointer; }
     #error, #message { color: red; font-weight: bold; }
     #climberNameDisplay { font-weight: bold; color: #555; }
   </style>
@@ -24,11 +24,20 @@
     </label>
     <div id="climberNameDisplay"></div>
 
+    <label>Category:
+      <select id="categorySelect" required>
+        <option value="">Select Category</option>
+        <option value="Novice">Novice</option>
+        <option value="Intermediate">Intermediate</option>
+        <option value="Open">Open</option>
+        <option value="Team">Team</option>
+        <option value="Enduro">Enduro</option>
+      </select>
+    </label>
+
     <label>Lane:
       <select id="laneSelect" required>
         <option value="">Select Lane</option>
-        <option value="1">Lane A</option>
-        <option value="2">Lane B</option>
       </select>
     </label>
 
@@ -40,68 +49,6 @@
     <div id="message"></div>
   </form>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('bibInput').addEventListener('blur', async (e) => {
-      const bib = e.target.value.trim();
-      if (bib) {
-        const climberName = await fetchClimberName(bib);
-        document.getElementById('climberNameDisplay').textContent = climberName
-          ? `Climber: ${climberName}`
-          : '❌ Bib not found';
-      }
-    });
-
-    document.getElementById('timingForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const bib = document.getElementById('bibInput').value.trim();
-      const climber = document.getElementById('climberNameDisplay').textContent.replace('Climber: ', '');
-      const lane = document.getElementById('laneSelect').value;
-      const time = parseFloat(document.getElementById('laneTime').value);
-
-      if (!bib || !climber || !lane || isNaN(time)) {
-        document.getElementById('message').textContent = 'Please fill in all fields correctly.';
-        return;
-      }
-
-      const payload = lane === '1'
-        ? { bib, climber, lane1Time: time }
-        : { bib, climber, lane2Time: time };
-
-      try {
-        const res = await fetch('/submit', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          document.getElementById('message').textContent = `✅ Time submitted!`;
-          e.target.reset();
-          document.getElementById('climberNameDisplay').textContent = '';
-        } else {
-          const errorText = await res.text();
-          document.getElementById('message').textContent = '❌ ' + errorText;
-        }
-      } catch (err) {
-        document.getElementById('message').textContent = '❌ Server error';
-        console.error(err);
-      }
-    });
-  });
-
-  async function fetchClimberName(bib) {
-    try {
-      const res = await fetch(`/climbers/${bib}`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      return data.name;
-    } catch {
-      return null;
-    }
-  }
-</script>
-
+  <script src="submission.js"></script>
 </body>
 </html>

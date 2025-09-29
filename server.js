@@ -92,6 +92,21 @@ app.post('/submit', (req, res) => {
 
     io.emit('newResult', { climber, route });
     res.status(200).send('Saved');
+    const category = document.getElementById('categorySelect').value;
+
+    if (!bib || !climber || !category || !lane || isNaN(time)) {
+      document.getElementById('message').textContent = 'Please fill in all fields correctly.';
+      return;
+    }
+
+    const payload = {
+      bib,
+      climber,
+      category,
+      lane: laneMap[category][lane - 1], // convert index to lane name
+      time
+    };
+   
   });
 });
 
