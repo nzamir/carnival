@@ -39,13 +39,4 @@ app.post('/submit', (req, res) => {
   res.json({ message: 'Submission saved!' });
 });
 
-document.getElementById('task-form').reset();
-
-// Optional: Clear radio buttons manually if needed
-const radios = document.querySelectorAll('input[name="task"]');
-radios.forEach(r => r.checked = false);
-
-// Optional: Clear dynamic task options
-document.getElementById('task-options').innerHTML = '';
-
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
