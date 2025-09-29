@@ -1,0 +1,4 @@
+id,name,departments,tasks
+E001,Alice Tan,HR;Finance,T001;T002
+E002,Ben Lim,Engineering,T003;T004
+E003,Cheryl Ong,Sales;Marketing,T005;T006

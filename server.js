@@ -1,5 +1,6 @@
 const express = require('express');
 const fs = require('fs');
+const csv = require('csv-parser');
 const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -7,18 +8,35 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static('public'));
 app.use(express.json());
 
+let employeeData = {};
+
+fs.createReadStream('employee.csv')
+  .pipe(csv())
+  .on('data', (row) => {
+    employeeData[row.id] = {
+      name: row.name,
+      departments: row.departments.split(';'),
+      tasks: row.tasks.split(';'),
+    };
+  });
+
+app.get('/employee/:id', (req, res) => {
+  const data = employeeData[req.params.id] || { name: '', departments: [], tasks: [] };
+  res.json(data);
+});
+
 app.post('/submit', (req, res) => {
-  const newEntry = req.body;
+  const entry = req.body;
   const filePath = path.join(__dirname, 'submissions.json');
-  let data = [];
+  let submissions = [];
 
   if (fs.existsSync(filePath)) {
-    data = JSON.parse(fs.readFileSync(filePath));
+    submissions = JSON.parse(fs.readFileSync(filePath));
   }
 
-  data.push(newEntry);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-  res.status(200).send({ message: 'Submission saved!' });
+  submissions.push(entry);
+  fs.writeFileSync(filePath, JSON.stringify(submissions, null, 2));
+  res.json({ message: 'Submission saved!' });
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

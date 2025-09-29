@@ -2,22 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Simple Input Form</title>
+  <title>Task Tracker</title>
 </head>
 <body>
-  <h1>User Input Example</h1>
-  <form id="user-form">
-    <label for="username">Enter your name:</label>
-    <input type="text" id="username" name="username" required />
+  <h1>Employee Task Tracker</h1>
+  <form id="task-form">
+    <label for="emp-id">Employee ID:</label>
+    <input type="text" id="emp-id" name="emp-id" required />
+
+    <label for="emp-name">Employee Name:</label>
+    <input type="text" id="emp-name" name="emp-name" disabled />
+
+    <label for="department">Department:</label>
+    <select id="department" name="department"></select>
+
+    <label for="task">Task:</label>
+    <select id="task" name="task"></select>
+
+    <label for="status">Status:</label>
+    <select id="status" name="status">
+      <option value="Completed">Completed</option>
+      <option value="Attempted">Attempted</option>
+    </select>
+
     <button type="submit">Submit</button>
   </form>
 
-  <script>
-    document.getElementById('user-form').addEventListener('submit', function (e) {
-      e.preventDefault();
-      const name = document.getElementById('username').value;
-      alert('Hello, ' + name + '!');
-    });
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
