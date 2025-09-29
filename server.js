@@ -39,7 +39,6 @@ app.post('/submit', (req, res) => {
   res.json({ message: 'Submission saved!' });
 });
 
-alert(result.message);
 document.getElementById('task-form').reset();
 
 // Optional: Clear radio buttons manually if needed

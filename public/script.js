@@ -71,6 +71,8 @@ document.getElementById('task-form').addEventListener('submit', async function (
 
     const result = await res.json();
     alert(result.message);
+    document.getElementById('task-form').reset();
+    document.getElementById('task-options').innerHTML = '';
   } catch (err) {
     console.error('Error submitting form:', err);
     alert('Submission failed.');
