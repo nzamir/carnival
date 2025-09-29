@@ -1,1 +1,0 @@
-# Climbing-Results-Points-
