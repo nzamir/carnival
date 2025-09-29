@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simple Input Form</title>
+</head>
+<body>
+  <h1>User Input Example</h1>
+  <form id="user-form">
+    <label for="username">Enter your name:</label>
+    <input type="text" id="username" name="username" required />
+    <button type="submit">Submit</button>
+  </form>
+
+  <script>
+    document.getElementById('user-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const name = document.getElementById('username').value;
+      alert('Hello, ' + name + '!');
+    });
+  </script>
+</body>
+</html>
