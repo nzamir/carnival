@@ -30,21 +30,19 @@ function populateTaskOptions(tasks) {
   const container = document.getElementById('task-options');
   container.innerHTML = '';
   tasks.forEach(task => {
+    const label = document.createElement('label');
+    label.style.display = 'block';
+
     const radio = document.createElement('input');
     radio.type = 'radio';
     radio.name = 'task';
     radio.value = task;
-    radio.id = `task-${task}`;
     radio.required = true;
 
-    const label = document.createElement('label');
-    label.htmlFor = radio.id;
-    label.textContent = task;
-
-    taskContainer.appendChild(radio);
-    taskContainer.appendChild(label);
+    label.appendChild(radio);
+    label.appendChild(document.createTextNode(` ${task}`));
+    container.appendChild(label);
   });
-
 }
 
 document.getElementById('task-form').addEventListener('submit', async function (e) {
