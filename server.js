@@ -49,24 +49,32 @@ app.get('/submissions', (req, res) => {
   } else {
     res.json([]);
   }
+});
 
-  app.get('/summary', (req, res) => {
+app.get('/summary-by-employee', (req, res) => {
   const filePath = path.join(__dirname, 'submissions.json');
-  if (!fs.existsSync(filePath)) return res.json({ Completed: 0, Attempted: 0 });
+  if (!fs.existsSync(filePath)) return res.json([]);
 
   const submissions = JSON.parse(fs.readFileSync(filePath));
-  const summary = { Completed: 0, Attempted: 0 };
+  const summaryMap = {};
 
   submissions.forEach(entry => {
-    if (entry.status === 'Completed') summary.Completed++;
-    else if (entry.status === 'Attempted') summary.Attempted++;
+    const id = entry.employeeId;
+    if (!summaryMap[id]) {
+      summaryMap[id] = {
+        employeeId: id,
+        employeeName: entry.employeeName,
+        Completed: 0,
+        Attempted: 0,
+      };
+    }
+    if (entry.status === 'Completed') summaryMap[id].Completed++;
+    else if (entry.status === 'Attempted') summaryMap[id].Attempted++;
   });
 
-  res.json(summary);
+  const summaryList = Object.values(summaryMap);
+  res.json(summaryList);
 });
-
-});
-
 
 
 
