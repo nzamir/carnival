@@ -7,7 +7,7 @@ document.getElementById('emp-id').addEventListener('blur', async function () {
     const data = await res.json();
 
     document.getElementById('emp-name').value = data.name || '';
-    populateSelect('department', data.departments);
+    document.getElementById('department').value = data.departments[0] || '';
     populateTaskOptions(data.tasks);
   } catch (err) {
     console.error('Error fetching employee data:', err);
