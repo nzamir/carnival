@@ -39,4 +39,15 @@ app.post('/submit', (req, res) => {
   res.json({ message: 'Submission saved!' });
 });
 
+app.get('/submissions', (req, res) => {
+  const filePath = path.join(__dirname, 'submissions.json');
+  if (fs.existsSync(filePath)) {
+    const data = JSON.parse(fs.readFileSync(filePath));
+    res.json(data);
+  } else {
+    res.json([]);
+  }
+});
+
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
