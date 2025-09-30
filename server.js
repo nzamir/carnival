@@ -28,7 +28,7 @@ app.get('/employee/:id', (req, res) => {
 app.post('/submit', (req, res) => {
   const entry = req.body;
   entry.timestamp = new Date().toISOString();
-  
+
   const filePath = path.join(__dirname, 'submissions.json');
   let submissions = [];
 
@@ -49,6 +49,22 @@ app.get('/submissions', (req, res) => {
   } else {
     res.json([]);
   }
+
+  app.get('/summary', (req, res) => {
+  const filePath = path.join(__dirname, 'submissions.json');
+  if (!fs.existsSync(filePath)) return res.json({ Completed: 0, Attempted: 0 });
+
+  const submissions = JSON.parse(fs.readFileSync(filePath));
+  const summary = { Completed: 0, Attempted: 0 };
+
+  submissions.forEach(entry => {
+    if (entry.status === 'Completed') summary.Completed++;
+    else if (entry.status === 'Attempted') summary.Attempted++;
+  });
+
+  res.json(summary);
+});
+
 });
 
 

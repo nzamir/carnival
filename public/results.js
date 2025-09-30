@@ -38,7 +38,18 @@ fetch('/submissions')
     });
 }
 
+function loadSummary() {
+  fetch('/summary')
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('completed-count').textContent = data.Completed;
+      document.getElementById('attempted-count').textContent = data.Attempted;
+    })
+    .catch(err => console.error('Error loading summary:', err));
+}
+
 // Call on page load
+loadSummary();
 loadResults();
 
 // Optional: expose this function globally if you want to call it from script.js
