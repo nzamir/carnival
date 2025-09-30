@@ -27,6 +27,8 @@ app.get('/employee/:id', (req, res) => {
 
 app.post('/submit', (req, res) => {
   const entry = req.body;
+  entry.timestamp = new Date().toISOString();
+  
   const filePath = path.join(__dirname, 'submissions.json');
   let submissions = [];
 
@@ -49,7 +51,7 @@ app.get('/submissions', (req, res) => {
   }
 });
 
-entry.timestamp = new Date().toISOString();
+
 
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
