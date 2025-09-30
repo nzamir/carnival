@@ -75,10 +75,9 @@ document.getElementById('task-form').addEventListener('submit', async function (
     const radios = document.querySelectorAll('input[name="task"]');
     radios.forEach(r => r.checked = false);
     document.getElementById('task-options').innerHTML = '';
-    // If results table is on the same page
-    if (window.loadResults) {
-      window.loadResults();
-    }
+    
+    window.location.href = '/results.html';
+
 
   } catch (err) {
     console.error('Error submitting form:', err);

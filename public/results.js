@@ -18,12 +18,12 @@ fetch('/submissions')
     console.error('Error loading submissions:', err);
   });
 
-  function loadResults() {
-  fetch('/submissions')
+function loadResults() {
+  fetch('/submissions', { cache: 'no-store' })
     .then(res => res.json())
     .then(data => {
       const tbody = document.querySelector('#results-table tbody');
-      tbody.innerHTML = ''; // Clear old rows
+      tbody.innerHTML = ''; // Clear previous rows
       data.forEach(entry => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -35,12 +35,15 @@ fetch('/submissions')
         `;
         tbody.appendChild(row);
       });
+    })
+    .catch(err => {
+      console.error('Error loading submissions:', err);
     });
 }
 
-
-// Call on page load
+// Initial load
 loadResults();
 
-// Optional: expose this function globally if you want to call it from script.js
+// Optional: expose globally so other scripts can trigger refresh
 window.loadResults = loadResults;
+
