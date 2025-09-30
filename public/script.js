@@ -76,7 +76,10 @@ document.getElementById('task-form').addEventListener('submit', async function (
     radios.forEach(r => r.checked = false);
     document.getElementById('task-options').innerHTML = '';
     
-    window.location.href = '/results.html';
+    if (window.loadResults) {
+     window.loadResults(); // Refresh the results table
+    }
+
 
 
   } catch (err) {
