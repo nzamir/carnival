@@ -49,5 +49,7 @@ app.get('/submissions', (req, res) => {
   }
 });
 
+entry.timestamp = new Date().toISOString();
+
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
