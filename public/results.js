@@ -24,6 +24,7 @@ function loadResults() {
     .then(data => {
       const tbody = document.querySelector('#results-table tbody');
       tbody.innerHTML = ''; // Clear previous rows
+
       data.forEach(entry => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -35,6 +36,12 @@ function loadResults() {
         `;
         tbody.appendChild(row);
       });
+
+      // ✅ Move this outside the loop
+      const updated = document.getElementById('last-updated');
+      if (updated) {
+        updated.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+      }
     })
     .catch(err => {
       console.error('Error loading submissions:', err);
@@ -43,7 +50,5 @@ function loadResults() {
 
 // Initial load
 loadResults();
-
-// Optional: expose globally so other scripts can trigger refresh
 window.loadResults = loadResults;
-
+setInterval(loadResults, 5000); // Refresh every 5 seconds
