@@ -8,7 +8,7 @@ document.getElementById('emp-id').addEventListener('blur', async function () {
 
     document.getElementById('emp-name').value = data.name || '';
     document.getElementById('department').value = data.departments[0] || '';
-    populateTaskOptions(data.tasks);
+    populateTaskOptions(data.tasks, data.taskStatus);
   } catch (err) {
     console.error('Error fetching employee data:', err);
     alert('Failed to fetch employee details.');
@@ -26,24 +26,33 @@ function populateSelect(id, options) {
   });
 }
 
-function populateTaskOptions(tasks) {
+function populateTaskOptions(tasks, taskStatus = {}) {
   const container = document.getElementById('task-options');
   container.innerHTML = '';
-  tasks.forEach(task => {
-    const label = document.createElement('label');
-    label.style.display = 'block';
 
+  tasks.forEach(task => {
     const radio = document.createElement('input');
     radio.type = 'radio';
     radio.name = 'task';
     radio.value = task;
+    radio.id = `task-${task}`;
     radio.required = true;
 
-    label.appendChild(radio);
-    label.appendChild(document.createTextNode(` ${task}`));
+    const label = document.createElement('label');
+    label.htmlFor = radio.id;
+    label.textContent = `Task ${task}`;
+
+    // Disable if already completed
+    if (taskStatus[task] === 'Completed') {
+      radio.disabled = true;
+      label.style.color = '#999';
+    }
+
+    container.appendChild(radio);
     container.appendChild(label);
   });
 }
+
 
 document.getElementById('task-form').addEventListener('submit', async function (e) {
   e.preventDefault();
