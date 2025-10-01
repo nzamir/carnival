@@ -26,24 +26,36 @@ app.get('/employee/:id', (req, res) => {
 });
 
 app.post('/submit', (req, res) => {
-  const entry = req.body;
-  entry.timestamp = new Date().toISOString();
+  const { employeeId, task, status } = req.body;
 
-  const filePath = path.join(__dirname, 'submissions.json');
-  let submissions = [];
+  const existing = submissions.find(
+    s => s.employeeId === employeeId && s.task === task
+  );
 
-  if (existingStatus === 'Completed') {
-    return res.status(400).json({ message: 'Task already completed. Cannot resubmit.' });
+  // 🔒 Prevent duplicate "Completed" submissions
+  if (existing && existing.status === 'Completed') {
+    return res.status(400).json({
+      message: 'Task already marked as Completed. Cannot resubmit.',
+    });
   }
 
-  if (fs.existsSync(filePath)) {
-    submissions = JSON.parse(fs.readFileSync(filePath));
+  // 🔒 Prevent downgrading from Completed → Attempted
+  if (existing && existing.status === 'Attempted' && status === 'Attempted') {
+    return res.status(400).json({
+      message: 'Task already attempted. You must mark it as Completed.',
+    });
   }
 
-  submissions.push(entry);
-  fs.writeFileSync(filePath, JSON.stringify(submissions, null, 2));
-  res.json({ message: 'Submission saved!' });
+  // ✅ Save or update the submission
+  if (existing) {
+    existing.status = status;
+  } else {
+    submissions.push(req.body);
+  }
+
+  res.json({ message: 'Submission recorded successfully.' });
 });
+
 
 app.get('/submissions', (req, res) => {
   const filePath = path.join(__dirname, 'submissions.json');

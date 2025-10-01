@@ -102,8 +102,15 @@ document.getElementById('task-form').addEventListener('submit', async function (
       body: JSON.stringify(payload),
     });
 
+    if (!res.ok) {
+      const error = await res.json();
+      alert(error.message || 'Submission failed.');
+      return;
+    }
+
     const result = await res.json();
     alert(result.message);
+
     document.getElementById('task-form').reset();
     const radios = document.querySelectorAll('input[name="task"]');
     radios.forEach(r => r.checked = false);
