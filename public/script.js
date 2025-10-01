@@ -42,16 +42,45 @@ function populateTaskOptions(tasks, taskStatus = {}) {
     label.htmlFor = radio.id;
     label.textContent = `Task ${task}`;
 
-    // Disable if already completed
     if (taskStatus[task] === 'Completed') {
       radio.disabled = true;
       label.style.color = '#999';
+      label.title = 'Already completed';
     }
 
     container.appendChild(radio);
     container.appendChild(label);
   });
+
+  // Reset status dropdown
+  const statusSelect = document.getElementById('status');
+  statusSelect.disabled = true;
+
+  // Enable status only when a valid task is selected
+  container.addEventListener('change', function () {
+    const selected = document.querySelector('input[name="task"]:checked');
+    const statusSelect = document.getElementById('status');
+
+    if (selected && taskStatus[selected.value] === 'Attempted') {
+      statusSelect.disabled = false;
+
+      // Clear existing options
+      statusSelect.innerHTML = '';
+
+      // Only allow "Completed"
+      const option = document.createElement('option');
+      option.value = 'Completed';
+      option.textContent = 'Completed';
+      statusSelect.appendChild(option);
+      statusSelect.value = 'Completed';
+    } else {
+      statusSelect.disabled = true;
+      statusSelect.innerHTML = '';
+    }
+  });
+
 }
+
 
 
 document.getElementById('task-form').addEventListener('submit', async function (e) {
