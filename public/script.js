@@ -30,6 +30,10 @@ function populateTaskOptions(tasks, taskStatus = {}) {
   const container = document.getElementById('task-options');
   container.innerHTML = '';
 
+  const statusSelect = document.getElementById('status');
+  statusSelect.disabled = true;
+  statusSelect.innerHTML = '';
+
   tasks.forEach(task => {
     const radio = document.createElement('input');
     radio.type = 'radio';
@@ -52,34 +56,28 @@ function populateTaskOptions(tasks, taskStatus = {}) {
     container.appendChild(label);
   });
 
-  // Reset status dropdown
-  const statusSelect = document.getElementById('status');
-  statusSelect.disabled = true;
-
-  // Enable status only when a valid task is selected
+  // Listen for task selection
   container.addEventListener('change', function () {
     const selected = document.querySelector('input[name="task"]:checked');
-    const statusSelect = document.getElementById('status');
+    statusSelect.innerHTML = '';
 
-    if (selected && taskStatus[selected.value] === 'Attempted') {
+    if (selected && taskStatus[selected.value] !== 'Completed') {
       statusSelect.disabled = false;
 
-      // Clear existing options
-      statusSelect.innerHTML = '';
+      ['Attempted', 'Completed'].forEach(status => {
+        const option = document.createElement('option');
+        option.value = status;
+        option.textContent = status;
+        statusSelect.appendChild(option);
+      });
 
-      // Only allow "Completed"
-      const option = document.createElement('option');
-      option.value = 'Completed';
-      option.textContent = 'Completed';
-      statusSelect.appendChild(option);
-      statusSelect.value = 'Completed';
+      statusSelect.value = taskStatus[selected.value] || 'Attempted';
     } else {
       statusSelect.disabled = true;
-      statusSelect.innerHTML = '';
     }
   });
-
 }
+
 
 
 
