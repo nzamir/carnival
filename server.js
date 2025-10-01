@@ -80,6 +80,20 @@ app.get('/summary-by-employee', (req, res) => {
   res.json(summaryList);
 });
 
+function getTaskStatus(employeeId, task) {
+  const entry = submissions.find(s => s.employeeId === employeeId && s.task === task);
+  return entry ? entry.status : null;
+}
+
+function saveSubmission(data) {
+  const index = submissions.findIndex(s => s.employeeId === data.employeeId && s.task === data.task);
+  if (index !== -1) {
+    submissions[index].status = data.status;
+  } else {
+    submissions.push(data);
+  }
+}
+
 
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
