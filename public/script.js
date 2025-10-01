@@ -8,7 +8,7 @@ document.getElementById('emp-id').addEventListener('blur', async function () {
 
     document.getElementById('emp-name').value = data.name || '';
     document.getElementById('department').value = data.departments[0] || '';
-    populateTaskOptions(data.tasks, data.taskStatus);
+    populateTaskOptions(data.tasks, data.taskStatus || {});
   } catch (err) {
     console.error('Error fetching employee data:', err);
     alert('Failed to fetch employee details.');
@@ -26,13 +26,13 @@ function populateSelect(id, options) {
   });
 }
 
-function populateTaskOptions(tasks, taskStatus = {}) {
+function populateTaskOptions(tasks, taskStatus) {
   const container = document.getElementById('task-options');
-  container.innerHTML = '';
-
   const statusSelect = document.getElementById('status');
-  statusSelect.disabled = true;
+
+  container.innerHTML = '';
   statusSelect.innerHTML = '';
+  statusSelect.disabled = true;
 
   tasks.forEach(task => {
     const radio = document.createElement('input');
@@ -56,8 +56,7 @@ function populateTaskOptions(tasks, taskStatus = {}) {
     container.appendChild(label);
   });
 
-  // Listen for task selection
-  container.addEventListener('change', function () {
+  container.addEventListener('change', () => {
     const selected = document.querySelector('input[name="task"]:checked');
     statusSelect.innerHTML = '';
 
@@ -82,8 +81,15 @@ document.getElementById('task-form').addEventListener('submit', async function (
   e.preventDefault();
 
   const selectedTask = document.querySelector('input[name="task"]:checked');
+  const status = document.getElementById('status').value;
+
   if (!selectedTask) {
     alert('Please select a task.');
+    return;
+  }
+
+  if (!status) {
+    alert('Please select a status.');
     return;
   }
 
@@ -92,7 +98,7 @@ document.getElementById('task-form').addEventListener('submit', async function (
     employeeName: document.getElementById('emp-name').value,
     department: document.getElementById('department').value,
     task: selectedTask.value,
-    status: document.getElementById('status').value,
+    status,
   };
 
   try {
@@ -102,26 +108,22 @@ document.getElementById('task-form').addEventListener('submit', async function (
       body: JSON.stringify(payload),
     });
 
+    const result = await res.json();
+
     if (!res.ok) {
-      const error = await res.json();
-      alert(error.message || 'Submission failed.');
+      alert(result.message || 'Submission failed.');
       return;
     }
 
-    const result = await res.json();
     alert(result.message);
-
     document.getElementById('task-form').reset();
-    const radios = document.querySelectorAll('input[name="task"]');
-    radios.forEach(r => r.checked = false);
     document.getElementById('task-options').innerHTML = '';
-    
+    document.getElementById('status').innerHTML = '';
+    document.getElementById('status').disabled = true;
+
     if (window.loadResults) {
-     window.loadResults(); // Refresh the results table
+      window.loadResults();
     }
-
-
-
   } catch (err) {
     console.error('Error submitting form:', err);
     alert('Submission failed.');

@@ -8,8 +8,11 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static('public'));
 app.use(express.json());
 
-let employeeData = {};
+const employeeData = {};
+const submissionsPath = path.join(__dirname, 'submissions.json');
+let submissions = [];
 
+// 🔄 Load employee data
 fs.createReadStream('employee.csv')
   .pipe(csv())
   .on('data', (row) => {
@@ -20,11 +23,28 @@ fs.createReadStream('employee.csv')
     };
   });
 
+// 🔄 Load submissions
+if (fs.existsSync(submissionsPath)) {
+  submissions = JSON.parse(fs.readFileSync(submissionsPath));
+}
+
+// 🔍 Get employee details
 app.get('/employee/:id', (req, res) => {
-  const data = employeeData[req.params.id] || { name: '', departments: [], tasks: [] };
-  res.json(data);
+  const id = req.params.id;
+  const data = employeeData[id] || { name: '', departments: [], tasks: [] };
+
+  // Include task status map
+  const taskStatus = {};
+  submissions
+    .filter(s => s.employeeId === id)
+    .forEach(s => {
+      taskStatus[s.task] = s.status;
+    });
+
+  res.json({ ...data, taskStatus });
 });
 
+// ✅ Submit task status
 app.post('/submit', (req, res) => {
   const { employeeId, task, status } = req.body;
 
@@ -32,46 +52,35 @@ app.post('/submit', (req, res) => {
     s => s.employeeId === employeeId && s.task === task
   );
 
-  // 🔒 Prevent duplicate "Completed" submissions
   if (existing && existing.status === 'Completed') {
     return res.status(400).json({
       message: 'Task already marked as Completed. Cannot resubmit.',
     });
   }
 
-  // 🔒 Prevent downgrading from Completed → Attempted
   if (existing && existing.status === 'Attempted' && status === 'Attempted') {
     return res.status(400).json({
       message: 'Task already attempted. You must mark it as Completed.',
     });
   }
 
-  // ✅ Save or update the submission
   if (existing) {
     existing.status = status;
   } else {
-    submissions.push(req.body);
+    submissions.push({ ...req.body, timestamp: new Date().toISOString() });
   }
 
+  fs.writeFileSync(submissionsPath, JSON.stringify(submissions, null, 2));
   res.json({ message: 'Submission recorded successfully.' });
 });
 
-
+// 📊 Get all submissions
 app.get('/submissions', (req, res) => {
-  const filePath = path.join(__dirname, 'submissions.json');
-  if (fs.existsSync(filePath)) {
-    const data = JSON.parse(fs.readFileSync(filePath));
-    res.json(data);
-  } else {
-    res.json([]);
-  }
+  res.json(submissions);
 });
 
+// 📈 Summary by employee
 app.get('/summary-by-employee', (req, res) => {
-  const filePath = path.join(__dirname, 'submissions.json');
-  if (!fs.existsSync(filePath)) return res.json([]);
-
-  const submissions = JSON.parse(fs.readFileSync(filePath));
   const summaryMap = {};
 
   submissions.forEach(entry => {
@@ -88,24 +97,7 @@ app.get('/summary-by-employee', (req, res) => {
     else if (entry.status === 'Attempted') summaryMap[id].Attempted++;
   });
 
-  const summaryList = Object.values(summaryMap);
-  res.json(summaryList);
+  res.json(Object.values(summaryMap));
 });
 
-function getTaskStatus(employeeId, task) {
-  const entry = submissions.find(s => s.employeeId === employeeId && s.task === task);
-  return entry ? entry.status : null;
-}
-
-function saveSubmission(data) {
-  const index = submissions.findIndex(s => s.employeeId === data.employeeId && s.task === data.task);
-  if (index !== -1) {
-    submissions[index].status = data.status;
-  } else {
-    submissions.push(data);
-  }
-}
-
-
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
