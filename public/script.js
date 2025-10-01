@@ -78,9 +78,6 @@ function populateTaskOptions(tasks, taskStatus = {}) {
   });
 }
 
-
-
-
 document.getElementById('task-form').addEventListener('submit', async function (e) {
   e.preventDefault();
 
