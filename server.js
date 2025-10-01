@@ -32,6 +32,10 @@ app.post('/submit', (req, res) => {
   const filePath = path.join(__dirname, 'submissions.json');
   let submissions = [];
 
+  if (existingStatus === 'Completed') {
+    return res.status(400).json({ message: 'Task already completed. Cannot resubmit.' });
+  }
+
   if (fs.existsSync(filePath)) {
     submissions = JSON.parse(fs.readFileSync(filePath));
   }
