@@ -38,4 +38,32 @@ document.getElementById('add-employee-form').addEventListener('submit', async fu
   this.reset();
 });
 
+document.getElementById('upload-btn').addEventListener('click', async () => {
+  const fileInput = document.getElementById('adhoc-upload');
+  const file = fileInput.files[0];
+  if (!file) {
+    alert('Please select a CSV file.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/upload-adhoc-csv', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await res.json();
+    alert(result.message);
+    loadEmployees(); // refresh table
+    fileInput.value = '';
+  } catch (err) {
+    console.error('Upload failed:', err);
+    alert('Failed to upload CSV.');
+  }
+});
+
+
 loadEmployees();

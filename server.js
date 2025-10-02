@@ -166,4 +166,38 @@ app.get('/summary-by-employee', (req, res) => {
   res.json(Object.values(summaryMap));
 });
 
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
+
+app.post('/upload-adhoc-csv', upload.single('file'), (req, res) => {
+  const filePath = req.file.path;
+  const adhoc = fs.existsSync(adhocPath)
+    ? JSON.parse(fs.readFileSync(adhocPath))
+    : {};
+
+  const newEntries = [];
+
+  fs.createReadStream(filePath)
+    .pipe(csv())
+    .on('data', (row) => {
+      const id = row.id;
+      if (!employeeData[id]) {
+        const entry = {
+          name: row.name,
+          departments: row.departments.split(';'),
+          tasks: row.tasks.split(';'),
+        };
+        employeeData[id] = entry;
+        adhoc[id] = entry;
+        newEntries.push(id);
+      }
+    })
+    .on('end', () => {
+      fs.writeFileSync(adhocPath, JSON.stringify(adhoc, null, 2));
+      fs.unlinkSync(filePath); // clean up temp file
+      res.json({ message: `Uploaded ${newEntries.length} new employees.` });
+    });
+});
+
+
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
