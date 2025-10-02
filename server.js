@@ -41,6 +41,28 @@ function preloadAdhocEmployees() {
   }
 }
 
+app.post('/add-employee', (req, res) => {
+  const { id, name, departments, tasks } = req.body;
+
+  if (employeeData[id]) {
+    return res.status(400).json({ message: 'Employee ID already exists.' });
+  }
+
+  const newEmp = { name, departments, tasks };
+  employeeData[id] = newEmp;
+
+  // Save to adhoc file
+  let adhoc = {};
+  if (fs.existsSync(adhocPath)) {
+    adhoc = JSON.parse(fs.readFileSync(adhocPath));
+  }
+  adhoc[id] = newEmp;
+  fs.writeFileSync(adhocPath, JSON.stringify(adhoc, null, 2));
+
+  res.json({ message: 'Employee added successfully.' });
+});
+
+
 // Combine both
 async function preloadAllEmployees() {
   await preloadEmployeeCSV();
