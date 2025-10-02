@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Employee Manager</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input, select { margin: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h1>Employee Manager</h1>
+
+  <form id="add-employee-form">
+    <input type="text" id="new-id" placeholder="Employee ID" required />
+    <input type="text" id="new-name" placeholder="Name" required />
+    <input type="text" id="new-departments" placeholder="Departments (e.g. Sales;HR)" required />
+    <input type="text" id="new-tasks" placeholder="Tasks (e.g. 1;2;3)" required />
+    <button type="submit">Add Employee</button>
+  </form>
+
+  <table id="employee-table">
+    <thead>
+      <tr><th>ID</th><th>Name</th><th>Departments</th><th>Tasks</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="admin.js"></script>
+</body>
+</html>

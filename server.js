@@ -44,6 +44,22 @@ app.get('/employee/:id', (req, res) => {
   res.json({ ...data, taskStatus });
 });
 
+app.get('/all-employees', (req, res) => {
+  res.json(employeeData);
+});
+
+app.post('/add-employee', (req, res) => {
+  const { id, name, departments, tasks } = req.body;
+
+  if (employeeData[id]) {
+    return res.status(400).json({ message: 'Employee ID already exists.' });
+  }
+
+  employeeData[id] = { name, departments, tasks };
+  res.json({ message: 'Employee added successfully.' });
+});
+
+
 // ✅ Submit task status
 app.post('/submit', (req, res) => {
   const { employeeId, task, status } = req.body;
