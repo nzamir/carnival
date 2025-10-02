@@ -13,15 +13,43 @@ const submissionsPath = path.join(__dirname, 'submissions.json');
 let submissions = [];
 
 // 🔄 Load employee data
-fs.createReadStream('employee.csv')
-  .pipe(csv())
-  .on('data', (row) => {
-    employeeData[row.id] = {
-      name: row.name,
-      departments: row.departments.split(';'),
-      tasks: row.tasks.split(';'),
-    };
+const adhocPath = path.join(__dirname, 'adhoc-employees.json');
+
+// Load CSV
+function preloadEmployeeCSV() {
+  return new Promise((resolve) => {
+    fs.createReadStream('employee.csv')
+      .pipe(csv())
+      .on('data', (row) => {
+        employeeData[row.id] = {
+          name: row.name,
+          departments: row.departments.split(';'),
+          tasks: row.tasks.split(';'),
+        };
+      })
+      .on('end', resolve);
   });
+}
+
+// Load adhoc additions
+function preloadAdhocEmployees() {
+  if (fs.existsSync(adhocPath)) {
+    const adhoc = JSON.parse(fs.readFileSync(adhocPath));
+    Object.entries(adhoc).forEach(([id, emp]) => {
+      employeeData[id] = emp; // overwrite or add
+    });
+  }
+}
+
+// Combine both
+async function preloadAllEmployees() {
+  await preloadEmployeeCSV();
+  preloadAdhocEmployees();
+  console.log('✅ Employee data loaded from CSV + adhoc');
+}
+
+preloadAllEmployees();
+
 
 // 🔄 Load submissions
 if (fs.existsSync(submissionsPath)) {
