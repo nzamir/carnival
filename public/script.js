@@ -36,7 +36,7 @@ function getDepartmentTasks(department) {
     const number = range.start + i;
     return {
       number,
-      label: `Task ${number}`,
+      label: `Tasks ${number}`,
       department
     };
   });
