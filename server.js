@@ -24,7 +24,6 @@ function preloadEmployeeCSV() {
         employeeData[row.id] = {
           name: row.name,
           departments: row.departments.split(';'),
-          tasks: row.tasks.split(';'),
         };
       })
       .on('end', resolve);
@@ -79,20 +78,39 @@ if (fs.existsSync(submissionsPath)) {
 }
 
 // 🔍 Get employee details
+const taskRegistry = {
+  HR: Array.from({ length: 8 }, (_, i) => ({
+    number: i + 1,
+    label: `Task ${i + 1}`,
+    department: 'HR'
+  })),
+  Engineering: Array.from({ length: 8 }, (_, i) => ({
+    number: i + 11,
+    label: `Task ${i + 11}`,
+    department: 'Engineering'
+  })),
+  Sales: Array.from({ length: 8 }, (_, i) => ({
+    number: i + 21,
+    label: `Task ${i + 21}`,
+    department: 'Sales'
+  }))
+};
+
 app.get('/employee/:id', (req, res) => {
-  const id = req.params.id;
-  const data = employeeData[id] || { name: '', departments: [], tasks: [] };
+  const employee = employees.find(e => e.employeeId === req.params.id);
+  if (!employee) return res.status(404).json({ message: 'Employee not found' });
 
-  // Include task status map
-  const taskStatus = {};
-  submissions
-    .filter(s => s.employeeId === id)
-    .forEach(s => {
-      taskStatus[s.task] = s.status;
-    });
+  const department = employee.department;
+  const tasks = taskRegistry[department] || [];
 
-  res.json({ ...data, taskStatus });
+  res.json({
+    name: employee.name,
+    departments: [department],
+    tasks,
+    taskStatus: getTaskStatus(employee.employeeId) // optional
+  });
 });
+
 
 app.get('/all-employees', (req, res) => {
   res.json(employeeData);
