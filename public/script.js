@@ -6,26 +6,43 @@ document.getElementById('emp-id').addEventListener('blur', async function () {
     const res = await fetch(`/employee/${empId}`);
     const data = await res.json();
 
-    document.getElementById('emp-name').value = data.name || '';
-    document.getElementById('department').value = data.departments[0] || '';
-    populateTaskOptions(data.tasks, data.taskStatus || {});
+    const name = data.name || '';
+    const department = data.departments?.[0] || '';
+    const taskStatus = data.taskStatus || {};
+
+    document.getElementById('emp-name').value = name;
+    document.getElementById('department').value = department;
+
+    const tasks = getDepartmentTasks(department);
+    populateTaskOptions(tasks, taskStatus);
   } catch (err) {
     console.error('Error fetching employee data:', err);
     alert('Failed to fetch employee details.');
   }
 });
 
-function populateSelect(id, options) {
-  const select = document.getElementById(id);
-  select.innerHTML = '';
-  options.forEach(opt => {
-    const option = document.createElement('option');
-    option.value = opt;
-    option.textContent = opt;
-    select.appendChild(option);
+// 🧠 Task registry by department
+function getDepartmentTasks(department) {
+  const ranges = {
+    HR: { start: 1, end: 8 },
+    Engineering: { start: 11, end: 18 },
+    Sales: { start: 21, end: 28 }
+  };
+
+  const range = ranges[department];
+  if (!range) return [];
+
+  return Array.from({ length: range.end - range.start + 1 }, (_, i) => {
+    const number = range.start + i;
+    return {
+      number,
+      label: `Task ${number}`,
+      department
+    };
   });
 }
 
+// 🧩 Render task options
 function populateTaskOptions(tasks, taskStatus) {
   const container = document.getElementById('task-options');
   const statusSelect = document.getElementById('status');
@@ -38,15 +55,17 @@ function populateTaskOptions(tasks, taskStatus) {
     const radio = document.createElement('input');
     radio.type = 'radio';
     radio.name = 'task';
-    radio.value = task;
-    radio.id = `task-${task}`;
+    radio.value = task.number;
+    radio.id = `task-${task.number}`;
     radio.required = true;
+    radio.dataset.label = task.label;
+    radio.dataset.department = task.department;
 
     const label = document.createElement('label');
     label.htmlFor = radio.id;
-    label.textContent = `Task ${task}`;
+    label.textContent = `${task.label} (${task.department})`;
 
-    if (taskStatus[task] === 'Completed') {
+    if (taskStatus[task.number] === 'Completed') {
       radio.disabled = true;
       label.style.color = '#999';
       label.title = 'Already completed';
@@ -77,35 +96,30 @@ function populateTaskOptions(tasks, taskStatus) {
   });
 }
 
+// 🚀 Submit form
 document.getElementById('task-form').addEventListener('submit', async function (e) {
   e.preventDefault();
 
   const selectedTask = document.querySelector('input[name="task"]:checked');
   const status = document.getElementById('status').value;
 
-  if (!selectedTask) {
-    alert('Please select a task.');
-    return;
-  }
-
-  if (!status) {
-    alert('Please select a status.');
-    return;
-  }
+  if (!selectedTask) return alert('Please select a task.');
+  if (!status) return alert('Please select a status.');
 
   const payload = {
     employeeId: document.getElementById('emp-id').value,
     employeeName: document.getElementById('emp-name').value,
-    department: document.getElementById('department').value,
-    task: selectedTask.value,
-    status,
+    department: selectedTask.dataset.department,
+    taskNumber: selectedTask.value,
+    taskLabel: selectedTask.dataset.label,
+    status
   };
 
   try {
     const res = await fetch('/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
     const result = await res.json();
@@ -118,12 +132,10 @@ document.getElementById('task-form').addEventListener('submit', async function (
     alert(result.message);
     document.getElementById('task-form').reset();
     document.getElementById('task-options').innerHTML = '';
-    document.getElementById('status').innerHTML = '';
-    document.getElementById('status').disabled = true;
+    statusSelect.innerHTML = '';
+    statusSelect.disabled = true;
 
-    if (window.loadResults) {
-      window.loadResults();
-    }
+    if (window.loadResults) window.loadResults();
   } catch (err) {
     console.error('Error submitting form:', err);
     alert('Submission failed.');
