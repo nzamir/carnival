@@ -14,7 +14,6 @@ const submissionsPath = path.join(__dirname, 'submissions.json');
 const adhocPath = path.join(__dirname, 'adhoc-employees.json');
 let submissions = [];
 const taskStatusStore = {};
-const employees = [];
 
 // 🔄 Load CSV employees
 function preloadEmployeeCSV() {
@@ -23,15 +22,10 @@ function preloadEmployeeCSV() {
       .pipe(csv())
       .on('data', (row) => {
         if (!row.id || !row.name || !row.department) return;
-        employeeData[row.id] = {
+        employeeData[row.id.trim()] = {
           name: row.name.trim(),
           departments: [row.department.trim()]
         };
-        employees.push({
-          employeeId: row.id.trim(),
-          name: row.name.trim(),
-          department: row.department.trim()
-        });
       })
       .on('end', resolve);
   });
@@ -106,19 +100,20 @@ app.post('/add-employee', (req, res) => {
 
 app.post('/submit', (req, res) => {
   const { employeeId, department, taskNumber, status } = req.body;
+  const taskNum = parseInt(taskNumber);
 
-  const employee = employees.find(e => e.employeeId === employeeId);
+  const employee = employeeData[employeeId];
   if (!employee) return res.status(404).json({ message: 'Employee not found' });
 
   const validTasks = taskRegistry[department] || [];
-  const isValidTask = validTasks.some(t => t.number === parseInt(taskNumber));
+  const isValidTask = validTasks.some(t => t.number === taskNum);
 
   if (!isValidTask) {
     return res.status(400).json({ message: 'Task does not belong to the specified department.' });
   }
 
   const existing = submissions.find(
-    s => s.employeeId === employeeId && s.taskNumber === taskNumber
+    s => s.employeeId === employeeId && parseInt(s.taskNumber) === taskNum
   );
 
   if (existing && existing.status === 'Completed') {
@@ -136,10 +131,10 @@ app.post('/submit', (req, res) => {
   }
 
   taskStatusStore[employeeId] = taskStatusStore[employeeId] || {};
-  taskStatusStore[employeeId][taskNumber] = status;
+  taskStatusStore[employeeId][taskNum] = status;
 
   fs.writeFileSync(submissionsPath, JSON.stringify(submissions, null, 2));
-  res.json({ message: `Task ${taskNumber} marked as ${status} for ${employee.name}` });
+  res.json({ message: `Task ${taskNum} marked as ${status} for ${employee.name}` });
 });
 
 app.get('/submissions', (req, res) => {
