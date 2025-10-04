@@ -6,11 +6,15 @@ async function loadEmployees() {
 
   Object.entries(data).forEach(([id, emp]) => {
     const row = document.createElement('tr');
+    const tasks = Array.isArray(emp.tasks)
+      ? emp.tasks.join(', ')
+      : '—'; // fallback if tasks are undefined
+
     row.innerHTML = `
       <td>${id}</td>
       <td>${emp.name}</td>
       <td>${emp.departments.join(', ')}</td>
-      <td>${emp.tasks.join(', ')}</td>
+      <td>${tasks}</td>
     `;
     tbody.appendChild(row);
   });
@@ -23,7 +27,6 @@ document.getElementById('add-employee-form').addEventListener('submit', async fu
     id: document.getElementById('new-id').value.trim(),
     name: document.getElementById('new-name').value.trim(),
     department: document.getElementById('new-departments').value.trim().split(';'),
-    tasks: document.getElementById('new-tasks').value.trim().split(';'),
   };
 
   const res = await fetch('/add-employee', {
