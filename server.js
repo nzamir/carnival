@@ -66,17 +66,17 @@ function getTaskStatus(employeeId) {
 // 🚀 Routes
 
 app.get('/employee/:id', (req, res) => {
-  const employee = employees.find(e => e.employeeId === req.params.id);
-  if (!employee) return res.status(404).json({ message: 'Employee not found' });
+  const emp = employeeData[req.params.id];
+  if (!emp) return res.status(404).json({ message: 'Employee not found' });
 
-  const department = employee.department;
+  const department = Array.isArray(emp.departments) ? emp.departments[0] : emp.departments;
   const tasks = taskRegistry[department] || [];
 
   res.json({
-    name: employee.name,
+    name: emp.name,
     departments: [department],
     tasks,
-    taskStatus: getTaskStatus(employee.employeeId)
+    taskStatus: getTaskStatus(req.params.id)
   });
 });
 
