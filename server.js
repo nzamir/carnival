@@ -1,83 +1,32 @@
-const express = require('express');
 const fs = require('fs');
 const csv = require('csv-parser');
-const path = require('path');
+const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(express.static('public'));
 app.use(express.json());
 
-const employeeData = {};
-const submissionsPath = path.join(__dirname, 'submissions.json');
-let submissions = [];
+const employees = [];
 
-// 🔄 Load employee data
-const adhocPath = path.join(__dirname, 'adhoc-employees.json');
+// 🧼 Load employee CSV (no tasks column anymore)
+fs.createReadStream('employee.csv')
+  .pipe(csv())
+  .on('data', row => {
+    if (!row.id || !row.name || !row.department) {
+      console.warn('Skipping malformed row:', row);
+      return;
+    }
 
-// Load CSV
-function preloadEmployeeCSV() {
-  return new Promise((resolve) => {
-    fs.createReadStream('employee.csv')
-      .pipe(csv())
-      .on('data', (row) => {
-        employeeData[row.id] = {
-          name: row.name,
-          departments: row.departments.split(';'),
-        };
-      })
-      .on('end', resolve);
-  });
-}
-
-// Load adhoc additions
-function preloadAdhocEmployees() {
-  if (fs.existsSync(adhocPath)) {
-    const adhoc = JSON.parse(fs.readFileSync(adhocPath));
-    Object.entries(adhoc).forEach(([id, emp]) => {
-      employeeData[id] = emp; // overwrite or add
+    employees.push({
+      employeeId: row.id.trim(),
+      name: row.name.trim(),
+      department: row.department.trim()
     });
-  }
-}
+  })
+  .on('end', () => {
+    console.log(`Loaded ${employees.length} employees`);
+  });
 
-app.post('/add-employee', (req, res) => {
-  const { id, name, departments, tasks } = req.body;
-
-  if (employeeData[id]) {
-    return res.status(400).json({ message: 'Employee ID already exists.' });
-  }
-
-  const newEmp = { name, departments, tasks };
-  employeeData[id] = newEmp;
-
-  // Save to adhoc file
-  let adhoc = {};
-  if (fs.existsSync(adhocPath)) {
-    adhoc = JSON.parse(fs.readFileSync(adhocPath));
-  }
-  adhoc[id] = newEmp;
-  fs.writeFileSync(adhocPath, JSON.stringify(adhoc, null, 2));
-
-  res.json({ message: 'Employee added successfully.' });
-});
-
-
-// Combine both
-async function preloadAllEmployees() {
-  await preloadEmployeeCSV();
-  preloadAdhocEmployees();
-  console.log('✅ Employee data loaded from CSV + adhoc');
-}
-
-preloadAllEmployees();
-
-
-// 🔄 Load submissions
-if (fs.existsSync(submissionsPath)) {
-  submissions = JSON.parse(fs.readFileSync(submissionsPath));
-}
-
-// 🔍 Get employee details
+// 🧠 Central task registry by department
 const taskRegistry = {
   HR: Array.from({ length: 8 }, (_, i) => ({
     number: i + 1,
@@ -96,126 +45,51 @@ const taskRegistry = {
   }))
 };
 
+// 🧩 Optional: task status store (in-memory or from DB)
+const taskStatusStore = {}; // { E001: { 11: 'Completed', 12: 'Attempted' }, ... }
+
+function getTaskStatus(employeeId) {
+  return taskStatusStore[employeeId] || {};
+}
+
+// 🚀 Employee lookup route
 app.get('/employee/:id', (req, res) => {
   const employee = employees.find(e => e.employeeId === req.params.id);
   if (!employee) return res.status(404).json({ message: 'Employee not found' });
 
-  const department = employee.department;
-  const tasks = taskRegistry[department] || [];
+  const tasks = taskRegistry[employee.department] || [];
 
   res.json({
     name: employee.name,
-    departments: [department],
+    departments: [employee.department],
     tasks,
-    taskStatus: getTaskStatus(employee.employeeId) // optional
+    taskStatus: getTaskStatus(employee.employeeId)
   });
 });
 
-
-app.get('/all-employees', (req, res) => {
-  res.json(employeeData);
-});
-
-app.post('/add-employee', (req, res) => {
-  const { id, name, departments, tasks } = req.body;
-
-  if (employeeData[id]) {
-    return res.status(400).json({ message: 'Employee ID already exists.' });
-  }
-
-  employeeData[id] = { name, departments, tasks };
-  res.json({ message: 'Employee added successfully.' });
-});
-
-
-// ✅ Submit task status
+// ✅ Submission route
 app.post('/submit', (req, res) => {
-  const { employeeId, task, status } = req.body;
+  const { employeeId, department, taskNumber, status } = req.body;
 
-  const existing = submissions.find(
-    s => s.employeeId === employeeId && s.task === task
-  );
+  const employee = employees.find(e => e.employeeId === employeeId);
+  if (!employee) return res.status(404).json({ message: 'Employee not found' });
 
-  if (existing && existing.status === 'Completed') {
-    return res.status(400).json({
-      message: 'Task already marked as Completed. Cannot resubmit.',
-    });
+  const validTasks = taskRegistry[department] || [];
+  const isValidTask = validTasks.some(t => t.number === parseInt(taskNumber));
+
+  if (!isValidTask) {
+    return res.status(400).json({ message: 'Task does not belong to the specified department.' });
   }
 
-  if (existing && existing.status === 'Attempted' && status === 'Attempted') {
-    return res.status(400).json({
-      message: 'Task already attempted. You must mark it as Completed.',
-    });
-  }
+  // Update task status
+  taskStatusStore[employeeId] = taskStatusStore[employeeId] || {};
+  taskStatusStore[employeeId][taskNumber] = status;
 
-  if (existing) {
-    existing.status = status;
-  } else {
-    submissions.push({ ...req.body, timestamp: new Date().toISOString() });
-  }
-
-  fs.writeFileSync(submissionsPath, JSON.stringify(submissions, null, 2));
-  res.json({ message: 'Submission recorded successfully.' });
+  res.json({ message: `Task ${taskNumber} marked as ${status} for ${employee.name}` });
 });
 
-// 📊 Get all submissions
-app.get('/submissions', (req, res) => {
-  res.json(submissions);
+// 🟢 Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
-// 📈 Summary by employee
-app.get('/summary-by-employee', (req, res) => {
-  const summaryMap = {};
-
-  submissions.forEach(entry => {
-    const id = entry.employeeId;
-    if (!summaryMap[id]) {
-      summaryMap[id] = {
-        employeeId: id,
-        employeeName: entry.employeeName,
-        Completed: 0,
-        Attempted: 0,
-      };
-    }
-    if (entry.status === 'Completed') summaryMap[id].Completed++;
-    else if (entry.status === 'Attempted') summaryMap[id].Attempted++;
-  });
-
-  res.json(Object.values(summaryMap));
-});
-
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
-
-app.post('/upload-adhoc-csv', upload.single('file'), (req, res) => {
-  const filePath = req.file.path;
-  const adhoc = fs.existsSync(adhocPath)
-    ? JSON.parse(fs.readFileSync(adhocPath))
-    : {};
-
-  const newEntries = [];
-
-  fs.createReadStream(filePath)
-    .pipe(csv())
-    .on('data', (row) => {
-      const id = row.id;
-      if (!employeeData[id]) {
-        const entry = {
-          name: row.name,
-          departments: row.departments.split(';'),
-          tasks: row.tasks.split(';'),
-        };
-        employeeData[id] = entry;
-        adhoc[id] = entry;
-        newEntries.push(id);
-      }
-    })
-    .on('end', () => {
-      fs.writeFileSync(adhocPath, JSON.stringify(adhoc, null, 2));
-      fs.unlinkSync(filePath); // clean up temp file
-      res.json({ message: `Uploaded ${newEntries.length} new employees.` });
-    });
-});
-
-
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
