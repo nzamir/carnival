@@ -22,7 +22,7 @@ document.getElementById('add-employee-form').addEventListener('submit', async fu
   const payload = {
     id: document.getElementById('new-id').value.trim(),
     name: document.getElementById('new-name').value.trim(),
-    departments: document.getElementById('new-departments').value.trim().split(';'),
+    department: document.getElementById('new-departments').value.trim().split(';'),
     tasks: document.getElementById('new-tasks').value.trim().split(';'),
   };
 
